@@ -1,0 +1,16 @@
+[package]
+name = "shared_jwt"
+version = "0.1.0"
+authors = ["J-F Bilodeau <jfbilodeau@chronogears.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.10.1"
+chrono = "0.4.9"
+reqwest = "0.9.20"
+serde = "1"
+serde_derive = "1"
+serde_json = "1.0.40"
+ring = "0.16.9"
