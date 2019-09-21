@@ -7,11 +7,36 @@ mod tests {
     use serde_derive::{Deserialize, Serialize};
 
     use crate::jwks::{JwtKey, KeyStore};
+    use std::time::{SystemTime, Duration};
+
+//    const IAT: u64 = 200;
+    const NBF: u64 = 300;
+    const EXP: u64 = 500;
+
+//    static HEADER: Value = json!({
+//        "alg": "RS256",
+//        "typ": "JWT",
+//        "kid": "1"
+//    });
+//
+//    static PAYLOAD: Value = json!({
+//        "name": "Ada Lovelace",
+//        "iss": "https://chronogears.com/test",
+//        "aud": "test",
+//        "auth_time": 100,
+//        "user_id": "uid123",
+//        "sub": "sbu123",
+//        "iat": IAT,
+//        "exp": EXP,
+//        "nbf": NBF,
+//        "email": "alovelace@chronogears.com"
+//    });
 
     const E: &str = "AQAB";
     const N: &str = "t5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w==";
     const N_INVALID: &str = "xt5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w==";
-    const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEifQ.eyJuYW1lIjoiQWRhIExvdmVsYWNlIiwiaXNzIjoiaHR0cHM6Ly9jaHJvbm9nZWFycy5jb20vdGVzdCIsImF1ZCI6InRlc3QiLCJhdXRoX3RpbWUiOjcsInVzZXJfaWQiOiJ1aWQxMjMiLCJzdWIiOiJzYnUxMjMiLCJpYXQiOjMsImV4cCI6MTMsImVtYWlsIjoiYWxvdmVsYWNlQGNocm9ub2dlYXJzLmNvbSJ9.bWT4zM_wlhv8LnRrFkeTMOGgCQnvnKSBOhiQmAzttlVmcyRacHHXzusjlxGJQh8H0orQfW8Vr8Ct_9IwSC-n9CTAxIc-wKMGuYlAfsTS6Xcxho9e9koigxdkT8cQqeK2EXjLEVmAG5dapKurcMfdruZPawhCySJnUUfvpnZRBCFVJvOAr-9hHl7PvqamfMgO2iF_DZI9_w4j2fzfb6H8Qn-zqbFPs7k2EiBT6OsBlaV8XeX8HpFRTIOeREulmY-t4FAsTVfMUQEZZBcmKg_afpRGzp23zctIsPdCO6ZxDVIAUlpimb5d0hk2A4eSddBzZ3bSChw-b3SMGFwGqZA8bw";
+    const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEifQ.eyJuYW1lIjoiQWRhIExvdmVsYWNlIiwiaXNzIjoiaHR0cHM6Ly9jaHJvbm9nZWFycy5jb20vdGVzdCIsImF1ZCI6InRlc3QiLCJhdXRoX3RpbWUiOjEwMCwidXNlcl9pZCI6InVpZDEyMyIsInN1YiI6InNidTEyMyIsImlhdCI6MjAwLCJleHAiOjUwMCwibmJmIjozMDAsImVtYWlsIjoiYWxvdmVsYWNlQGNocm9ub2dlYXJzLmNvbSJ9.eTQnwXrri_uY55fS4IygseBzzbosDM1hP153EZXzNlLH5s29kdlGt2mL_KIjYmQa8hmptt9RwKJHBtw6l4KFHvIcuif86Ix-iI2fCpqNnKyGZfgERV51NXk1THkgWj0GQB6X5cvOoFIdHa9XvgPl_rVmzXSUYDgkhd2t01FOjQeeT6OL2d9KdlQHJqAsvvKVc3wnaYYoSqv2z0IluvK93Tk1dUBU2yWXH34nX3GAVGvIoFoNRiiFfZwFlnz78G0b2fQV7B5g5F8XlNRdD1xmVZXU8X2-xh9LqRpnEakdhecciFHg0u6AyC4c00rlo_HBb69wlXajQ3R4y26Kpxn7HA";
+    const TOKEN_INV_CERT: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEifQ.eyJuYW1lIjoiQWRhIExvdmVsYWNlIiwiaXNzIjoiaHR0cHM6Ly9jaHJvbm9nZWFycy5jb20vdGVzdCIsImF1ZCI6InRlc3QiLCJhdXRoX3RpbWUiOjEwMCwidXNlcl9pZCI6InVpZDEyMyIsInN1YiI6InNidTEyMyIsImlhdCI6MjAwLCJleHAiOjUwMCwibmJmIjozMDAsImVtYWlsIjoiYWxvdmVsYWNlQGNocm9ub2dlYXJzLmNvbSJ9.XXXeTQnwXrri_uY55fS4IygseBzzbosDM1hP153EZXzNlLH5s29kdlGt2mL_KIjYmQa8hmptt9RwKJHBtw6l4KFHvIcuif86Ix-iI2fCpqNnKyGZfgERV51NXk1THkgWj0GQB6X5cvOoFIdHa9XvgPl_rVmzXSUYDgkhd2t01FOjQeeT6OL2d9KdlQHJqAsvvKVc3wnaYYoSqv2z0IluvK93Tk1dUBU2yWXH34nX3GAVGvIoFoNRiiFfZwFlnz78G0b2fQV7B5g5F8XlNRdD1xmVZXU8X2-xh9LqRpnEakdhecciFHg0u6AyC4c00rlo_HBb69wlXajQ3R4y26Kpxn7HA";
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TestPayload {
@@ -154,5 +179,73 @@ mod tests {
         let result = validator.verify(TOKEN);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_invalid_signature() {
+        let key = JwtKey::new("1", N, E);
+
+        let mut validator = KeyStore::new();
+
+        validator.add_key(&key);
+
+        let result = validator.verify(TOKEN_INV_CERT);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_expired() {
+        let key_store = KeyStore::new();
+
+        let jwk = key_store.decode(TOKEN).unwrap();
+
+        let time = SystemTime::UNIX_EPOCH + Duration::new(EXP+1, 0);
+
+        assert!(jwk.expired_time(time).unwrap());
+    }
+
+    #[test]
+    fn test_not_expired() {
+        let key_store = KeyStore::new();
+
+        let jwk = key_store.decode(TOKEN).unwrap();
+
+        let time = SystemTime::UNIX_EPOCH + Duration::new(EXP-1, 0);
+
+        assert!(!jwk.expired_time(time).unwrap());
+    }
+
+    #[test]
+    fn test_nbf() {
+        let validator = KeyStore::new();
+
+        let jwk = validator.decode(TOKEN).unwrap();
+
+        let time = SystemTime::UNIX_EPOCH + Duration::new(NBF-1, 0);
+
+        assert!(jwk.early_time(time).unwrap());
+    }
+
+    #[test]
+    fn test_not_nbf() {
+        let validator = KeyStore::new();
+
+        let jwk = validator.decode(TOKEN).unwrap();
+
+        let time = SystemTime::UNIX_EPOCH + Duration::new(NBF+1, 0);
+
+        assert!(!jwk.early_time(time).unwrap());
+    }
+
+    #[test]
+    fn test_valid_exp() {
+        let validator = KeyStore::new();
+
+        let jwk = validator.decode(TOKEN).unwrap();
+
+        let time = SystemTime::UNIX_EPOCH + Duration::new(NBF-1, 0);
+
+        assert!(jwk.early_time(time).unwrap());
     }
 }

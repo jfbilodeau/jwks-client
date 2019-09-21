@@ -197,23 +197,23 @@ impl Jwt {
     }
 
     pub fn expired(&self) -> Option<bool> {
-        self.expired_date(SystemTime::now())
+        self.expired_time(SystemTime::now())
     }
 
-    pub fn expired_date(&self, dt: SystemTime) -> Option<bool> {
+    pub fn expired_time(&self, time: SystemTime) -> Option<bool> {
         match self.payload.expiry() {
-            Some(time) => { Some(dt > time) }
+            Some(token_time) => { Some(time > token_time) }
             None => { None }
         }
     }
 
     pub fn early(&self) -> Option<bool> {
-        self.early_date(SystemTime::now())
+        self.early_time(SystemTime::now())
     }
 
-    pub fn early_date(&self, dt: SystemTime) -> Option<bool> {
+    pub fn early_time(&self, time: SystemTime) -> Option<bool> {
         match self.payload.not_before() {
-            Some(time) => { Some(dt < time) }
+            Some(token_time) => { Some(time < token_time) }
             None => { None }
         }
     }
@@ -223,6 +223,14 @@ impl Jwt {
             Some(t) => { Some(t == issuer) }
             None => { None }
         }
+    }
+
+    pub fn valid(&self) -> Option<bool> {
+        self.valid_time(SystemTime::now())
+    }
+
+    pub fn valid_time(&self, time: SystemTime) -> Option<bool> {
+        Some(!self.expired_time(time)? && !self.early_time(time)?)
     }
 }
 
