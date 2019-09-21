@@ -1,8 +1,6 @@
-use std::alloc::System;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
-use chrono::NaiveDateTime;
 use serde::de::DeserializeOwned;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -136,15 +134,15 @@ impl Payload {
     }
 
     pub fn exp(&self) -> Option<u64> {
-        self.get_u64("exp")
+        self.get_f64("exp").and_then(|f| Some(f as u64))
     }
 
     pub fn nbf(&self) -> Option<u64> {
-        self.get_u64("nbf")
+        self.get_u64("nbf").and_then(|f| Some(f as u64))
     }
 
     pub fn iat(&self) -> Option<u64> {
-        self.get_u64("iat")
+        self.get_u64("iat").and_then(|f| Some(f as u64))
     }
 
     pub fn jti(&self) -> Option<&str> {
@@ -234,6 +232,7 @@ mod tests {
 
     use crate::jwt::Payload;
 
+    #[test]
     fn test_payload() {
         let json = json!({
             "iss": "test_iss",

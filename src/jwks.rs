@@ -82,7 +82,6 @@ impl KeyStore {
     }
 
     pub fn refresh_keys(&mut self) -> Result<&mut KeyStore, Error> {
-        use serde_derive::Deserialize;
         #[derive(Deserialize)]
         pub struct JwtKeys {
             pub keys: Vec<JwtKey>,
