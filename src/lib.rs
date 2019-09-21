@@ -56,13 +56,25 @@ mod tests {
     fn test_refresh_keys() {
         const URL: &str = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
 
-        let mut validator = KeyStore::new_with_url(URL);
+        let mut key_store = KeyStore::new_with_url(URL);
 
-        let result = validator.refresh_keys();
+        let result = key_store.refresh_keys();
 
         assert!(result.is_ok());
-        assert_eq!(URL, validator.jkws_url());
-        assert!(validator.keys_len() > 0);
+        assert_eq!(URL, key_store.jkws_url());
+        assert!(key_store.keys_len() > 0);
+
+        assert!(key_store.key_by_id("1").is_some());
+        assert!(key_store.key_by_id("2").is_none());
+
+        let result = key_store.verify(TOKEN);
+
+        let jwt = result.unwrap();
+
+        assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
+        assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
+
     }
 
     #[test]
@@ -192,6 +204,15 @@ mod tests {
         let result = validator.verify(TOKEN_INV_CERT);
 
         assert!(result.is_err());
+
+        // Should still be able to decode:
+        let result = validator.decode(TOKEN_INV_CERT);
+
+        let jwt = result.unwrap();
+
+        assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
+        assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
     }
 
     #[test]
