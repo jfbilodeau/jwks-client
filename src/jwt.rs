@@ -138,11 +138,11 @@ impl Payload {
     }
 
     pub fn nbf(&self) -> Option<u64> {
-        self.get_u64("nbf").and_then(|f| Some(f as u64))
+        self.get_f64("nbf").and_then(|f| Some(f as u64))
     }
 
     pub fn iat(&self) -> Option<u64> {
-        self.get_u64("iat").and_then(|f| Some(f as u64))
+        self.get_f64("iat").and_then(|f| Some(f as u64))
     }
 
     pub fn jti(&self) -> Option<&str> {
