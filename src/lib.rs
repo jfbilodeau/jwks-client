@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn test_refresh_keys() {
-        const URL: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+        const URL: &str = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
 
         let mut validator = KeyStore::new_with_url(URL);
 

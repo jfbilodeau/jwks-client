@@ -91,7 +91,7 @@ impl KeyStore {
 
         let result = response.json::<JwtKeys>();
 
-        let jwks = result.or(Err(err_int("Failed to decode keys")))?;
+        let jwks = result.or(Err(err_int("Failed to parse keys")))?;
 
         jwks.keys.iter().for_each(|k| self.add_key(k));
 
