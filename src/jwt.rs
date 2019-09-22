@@ -53,9 +53,6 @@ macro_rules! impl_segment {
     )
 }
 
-pub type HeaderBodyRaw = Vec<u8>;
-pub type Signature = Vec<u8>;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Header {
     pub(crate) json: Value,
@@ -108,7 +105,7 @@ impl Header {
         self.get_str("cty")
     }
 
-    pub fn ctit(&self) -> Option<&str> {
+    pub fn crit(&self) -> Option<&str> {
         self.get_str("crit")
     }
 }
@@ -178,13 +175,15 @@ impl Payload {
 pub struct Jwt {
     header: Header,
     payload: Payload,
+    signature: String,
 }
 
 impl Jwt {
-    pub fn new(header: Header, payload: Payload) -> Self {
+    pub fn new(header: Header, payload: Payload, signature: String) -> Self {
         Jwt {
             header,
             payload,
+            signature,
         }
     }
 
@@ -195,6 +194,8 @@ impl Jwt {
     pub fn payload(&self) -> &Payload {
         &self.payload
     }
+
+    pub fn signature(&self) -> &String { &self.signature }
 
     pub fn expired(&self) -> Option<bool> {
         self.expired_time(SystemTime::now())
@@ -238,7 +239,42 @@ impl Jwt {
 mod tests {
     use serde_json::json;
 
-    use crate::jwt::Payload;
+    use crate::jwt::{Header, Payload};
+
+    #[test]
+    fn test_header() {
+        let json = json!({
+            "alg": "test_alg",
+            "enc": "test_enc",
+            "zip": "test_zip",
+            "jku": "test_jku",
+            "jkw": "test_jkw",
+            "kid": "test_kid",
+            "x5u": "test_x5u",
+            "x5c": "test_x5c",
+            "x5t": "test_x5t",
+            "typ": "test_typ",
+            "cty": "test_cty",
+            "crit": "test_crit"
+        });
+
+        let test_header = Header {
+            json,
+        };
+
+        assert_eq!("test_alg", test_header.alg().unwrap());
+        assert_eq!("test_enc", test_header.enc().unwrap());
+        assert_eq!("test_zip", test_header.zip().unwrap());
+        assert_eq!("test_jku", test_header.jku().unwrap());
+        assert_eq!("test_jkw", test_header.jkw().unwrap());
+        assert_eq!("test_kid", test_header.kid().unwrap());
+        assert_eq!("test_x5u", test_header.x5u().unwrap());
+        assert_eq!("test_x5c", test_header.x5c().unwrap());
+        assert_eq!("test_x5t", test_header.x5t().unwrap());
+        assert_eq!("test_typ", test_header.typ().unwrap());
+        assert_eq!("test_cty", test_header.cty().unwrap());
+        assert_eq!("test_crit", test_header.crit().unwrap());
+    }
 
     #[test]
     fn test_payload() {

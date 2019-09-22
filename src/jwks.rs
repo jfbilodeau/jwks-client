@@ -1,4 +1,6 @@
-use base64::decode_config;
+use std::time::SystemTime;
+
+use base64::{decode_config, URL_SAFE_NO_PAD};
 use reqwest;
 use ring::signature::{RSA_PKCS1_2048_8192_SHA256, RsaPublicKeyComponents};
 use serde::de::DeserializeOwned;
@@ -7,6 +9,9 @@ use serde_json::Value;
 
 use crate::error::*;
 use crate::jwt::*;
+
+type HeaderBody = String;
+pub type Signature = String;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtKey {
@@ -56,32 +61,34 @@ impl KeyStore {
         validator
     }
 
-    pub fn new_with_url(jkws_url: &str) -> KeyStore {
-        let validator = KeyStore {
+    pub fn new_from(jkws_url: &str) -> Result<KeyStore, Error> {
+        let mut key_store = KeyStore {
             key_url: jkws_url.to_owned(),
             keys: vec![],
         };
 
-        validator
+        key_store.load_keys()?;
+
+        Ok(key_store)
     }
 
-    pub fn clear_keys(&mut self) -> &mut KeyStore {
+    pub fn clear_keys(&mut self) {
         self.keys.clear();
-
-        self
     }
 
     pub fn jkws_url(&self) -> &str {
         &self.key_url
     }
 
-    pub fn refresh_keys_url(&mut self, url: &str) -> Result<&mut KeyStore, Error> {
+    pub fn load_keys_from(&mut self, url: &str) -> Result<(), Error> {
         self.key_url = url.to_owned();
 
-        self.refresh_keys()
+        self.load_keys()?;
+
+        Ok(())
     }
 
-    pub fn refresh_keys(&mut self) -> Result<&mut KeyStore, Error> {
+    pub fn load_keys(&mut self) -> Result<(), Error> {
         #[derive(Deserialize)]
         pub struct JwtKeys {
             pub keys: Vec<JwtKey>,
@@ -95,7 +102,7 @@ impl KeyStore {
 
         jwks.keys.iter().for_each(|k| self.add_key(k));
 
-        Ok(self)
+        Ok(())
     }
 
     pub fn key_by_id(&self, kid: &str) -> Option<&JwtKey> {
@@ -110,7 +117,7 @@ impl KeyStore {
         self.keys.push(key.clone());
     }
 
-    pub fn decode_segments(&self, token: &str) -> Result<(Header, Payload, HeaderBodyRaw, Signature), Error> {
+    fn decode_segments(&self, token: &str) -> Result<(Header, Payload, Signature, HeaderBody), Error> {
         let raw_segments: Vec<&str> = token.split(".").collect();
         if raw_segments.len() != 3 {
             return Err(err_inv("JWT does not have 3 segments"));
@@ -118,53 +125,61 @@ impl KeyStore {
 
         let header_segment = raw_segments[0];
         let payload_segment = raw_segments[1];
-        let crypto_segment = raw_segments[2];
+        let signature_segment = raw_segments[2].to_string();
 
         let header = Header::new(decode_segment::<Value>(header_segment).or(Err(err_hea("Failed to decode header")))?);
         let payload = Payload::new(decode_segment::<Value>(payload_segment).or(Err(err_pay("Failed to decode payload")))?);
 
-        let signature = decode_config(crypto_segment.as_bytes(), base64::URL_SAFE_NO_PAD)
-            .or(Err(err_sig("Failed to decode signature")))?;
+        let body = format!("{}.{}", header_segment, payload_segment);
 
-        let body = format!("{}.{}", header_segment, payload_segment)
-            .as_bytes()
-            .to_vec();
-
-        Ok((header, payload, body, signature))
+        Ok((header, payload, signature_segment, body))
     }
 
     pub fn decode(&self, token: &str) -> Result<Jwt, Error> {
-        let (header, payload, _, _) = self.decode_segments(token)?;
+        let (header, payload, signature, _) = self.decode_segments(token)?;
 
-        Ok(Jwt::new(header, payload))
+        Ok(Jwt::new(header, payload, signature))
     }
 
-    pub fn verify(&self, token: &str) -> Result<Jwt, Error> {
-        let (header, payload, body, signature) = self.decode_segments(token)?;
+    pub fn verify_time(&self, token: &str, time: SystemTime) -> Result<Jwt, Error> {
+        let (header, payload, signature, body) = self.decode_segments(token)?;
 
         if header.alg() != Some("RS256") {
-            return Err(err_inv("Unsupported algorithm"))
+            return Err(err_inv("Unsupported algorithm"));
         }
 
         let kid = header.kid().ok_or(err_key("No key id"))?;
 
         let key = self.key_by_id(kid).ok_or(err_key("JWT key does not exists"))?;
 
-        let n = decode_config(&key.n, base64::URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode modulus")))?;
-        let e = decode_config(&key.e, base64::URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode exponent")))?;
+        let n = decode_config(&key.n, URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode modulus")))?;
+        let e = decode_config(&key.e, URL_SAFE_NO_PAD).or(Err(err_cer("Failed to decode exponent")))?;
 
         let pkc = RsaPublicKeyComponents {
             e,
             n,
         };
 
-        let result = pkc.verify(&RSA_PKCS1_2048_8192_SHA256, &body, &signature);
+        let body_bytes = &body.as_bytes().to_vec();
+        let signature_bytes = decode_config(&signature, URL_SAFE_NO_PAD).or(Err(err_sig("Could not base64 decode signature")))?;
+
+        let result = pkc.verify(&RSA_PKCS1_2048_8192_SHA256, &body_bytes, &signature_bytes);
 
         result.or(Err(err_cer("Signature does not match certificate")))?;
 
-        Ok(Jwt::new(header, payload))
+        let jwt = Jwt::new(header, payload, signature);
+
+        if jwt.expired_time(time).unwrap_or(false) { return Err(err_exp("Token expired")); }
+        if jwt.early_time(time).unwrap_or(false) { return Err(err_nbf("Token used too early (nbf)")); }
+
+        Ok(jwt)
+    }
+
+    pub fn verify(&self, token: &str) -> Result<Jwt, Error> {
+        self.verify_time(token, SystemTime::now())
     }
 }
+
 
 fn decode_segment<T: DeserializeOwned>(segment: &str) -> Result<T, Error> {
     let raw = decode_config(segment, base64::URL_SAFE_NO_PAD).or(Err(err_inv("Failed to decode segment")))?;
@@ -175,5 +190,4 @@ fn decode_segment<T: DeserializeOwned>(segment: &str) -> Result<T, Error> {
 }
 
 #[cfg(test)]
-mod tests {
-}
+mod tests {}

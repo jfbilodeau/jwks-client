@@ -1,13 +1,14 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Error {
-    msg: &'static str,
-    typ: ErrorType,
+    pub msg: &'static str,
+    pub typ: Type,
 }
 
-#[derive(Debug)]
-pub enum ErrorType {
+#[derive(Debug, PartialEq)]
+pub enum Type {
     Invalid,
     Expired,
+    Early,
     Certificate,
     Key,
     Connection,
@@ -18,7 +19,7 @@ pub enum ErrorType {
     Internal,
 }
 
-pub fn err(msg: &'static str, typ: ErrorType) -> Error {
+pub fn err(msg: &'static str, typ: Type) -> Error {
     Error {
         msg,
         typ
@@ -26,39 +27,43 @@ pub fn err(msg: &'static str, typ: ErrorType) -> Error {
 }
 
 pub fn err_inv(msg: &'static str) -> Error {
-    err(msg, ErrorType::Invalid)
+    err(msg, Type::Invalid)
 }
 
 pub fn err_exp(msg: &'static str) -> Error {
-    err(msg, ErrorType::Expired)
+    err(msg, Type::Expired)
+}
+
+pub fn err_nbf(msg: &'static str) -> Error {
+    err(msg, Type::Early)
 }
 
 pub fn err_cer(msg: &'static str) -> Error {
-    err(msg, ErrorType::Certificate)
+    err(msg, Type::Certificate)
 }
 
 pub fn err_key(msg: &'static str) -> Error {
-    err(msg, ErrorType::Key)
+    err(msg, Type::Key)
 }
 
 pub fn err_con(msg: &'static str) -> Error {
-    err(msg, ErrorType::Connection)
+    err(msg, Type::Connection)
 }
 
 pub fn err_hea(msg: &'static str) -> Error {
-    err(msg, ErrorType::Header)
+    err(msg, Type::Header)
 }
 
 pub fn err_pay(msg: &'static str) -> Error {
-    err(msg, ErrorType::Payload)
+    err(msg, Type::Payload)
 }
 
 pub fn err_sig(msg: &'static str) -> Error {
-    err(msg, ErrorType::Signature)
+    err(msg, Type::Signature)
 }
 
 pub fn err_int(msg: &'static str) -> Error {
-    err(msg, ErrorType::Internal)
+    err(msg, Type::Internal)
 }
 
 #[cfg(test)]
