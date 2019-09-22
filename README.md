@@ -23,7 +23,7 @@ The following demonstrates how to load a set of keys from an HTTP address and ve
 use jwks::KeyStore;
 
 let jkws_url = "https://...";
-let key_set = KeyStore::new_from(jkws_url).unwrap();
+let key_set = KeySet::new_from(jkws_url).unwrap();
 
 // ...
 
@@ -48,7 +48,7 @@ use error::{Error, Type};
 let jwks_url = "http://...";
 let token = "...";
 
-let key_set = KeyStore::new_from(jwks_url).unwrap();
+let key_set = KeySet::new_from(jwks_url).unwrap();
 
 match key_set.verify(token) {
     Ok(jwt) => {
@@ -80,7 +80,7 @@ JWKS-Client can decode a JWT payload into a struct:
 ```rust
 use jwks::KeyStore;
 
-let key_set = KeyStore::new();
+let key_set = KeySet::new();
 
 let token = TOKEN;
 
