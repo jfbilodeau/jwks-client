@@ -8,6 +8,7 @@ categories = [ "Web programming", "Cryptography", "Authentication" ]
 license = "MIT"
 homepage = "https://github.com/jfbilodeau/jwks-client"
 repository = "https://github.com/jfbilodeau/jwks-client"
+description = "Library to validate JWT tokens using JSON Web Key Set (JWKS)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
