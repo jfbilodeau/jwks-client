@@ -1,8 +1,18 @@
-JWKS client library [![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-===
+[![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Minimum rustc version](https://img.shields.io/badge/rustc-stable-success.svg)
+
 JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
 
-I created this library specifically to decode GCP/Firebase JWT but should be useable with little to no modification. Contact me to propose support for different JWKS key store.
+Features
+---
+* Download key set from HTTP address
+* Decode JWT tokens into header, payload and signature
+* Verify token signature, expiry and not-before 
+* Can transfer payload in user-defined struct
+* Consise results (see [error::Type](https://docs.rs/shared_jwt/latest/shared_jwt/error/enum.Type.html) for example)
+* Designed for a production system (not an academic project)
+* Build with Rust stable
+
+I created this library specifically to decode GCP/Firebase JWT but should be useable with little to no modification. Contact me to propose support for different JWKS key store. Feedback, suggestions, complaints and critisism is appreaciate.
 
 Basic Usage
 ---
@@ -13,13 +23,13 @@ The following demonstrates how to load a set of keys from an HTTP address and ve
 use jwks::KeyStore;
 
 let jkws_url = "https://...";
-let key_store = KeyStore::new_from(jkws_url).unwrap();
+let key_set = KeyStore::new_from(jkws_url).unwrap();
 
 // ...
 
 let token = "...";
 
-match key_store.verify(token) {
+match key_set.verify(token) {
     Ok(jwt) => {
         println!("name={}", jwt.payload().get_str("name").unwrap());
     }
@@ -38,9 +48,9 @@ use error::{Error, Type};
 let jwks_url = "http://...";
 let token = "...";
 
-let key_store = KeyStore::new_from(jwks_url).unwrap();
+let key_set = KeyStore::new_from(jwks_url).unwrap();
 
-match key_store.verify(token) {
+match key_set.verify(token) {
     Ok(jwt) => {
         println!("name={}", jwt.payload().get_str("name").unwrap());
     }
@@ -70,11 +80,11 @@ JWKS-Client can decode a JWT payload into a struct:
 ```rust
 use jwks::KeyStore;
 
-let key_store = KeyStore::new();
+let key_set = KeyStore::new();
 
 let token = TOKEN;
 
-let jwt = key_store.decode(token).unwrap();
+let jwt = key_set.decode(token).unwrap();
 
 if jwt.expired().unwrap_or(false) {
     println!("Sorry, token expired")
@@ -94,3 +104,5 @@ TODO:
 * More documentation :P
 * Extract expiration time of keys from HTTP request
 * Automatically refresh keys in background
+
+(Made with ❤️ with Rust)

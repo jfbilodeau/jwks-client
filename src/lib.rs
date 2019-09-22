@@ -21,7 +21,7 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::jwks::{JwtKey, KeyStore};
+    use crate::jwks::{JwtKey, KeySet};
     use crate::error::{Type, Error};
     use std::alloc::System;
 
@@ -79,22 +79,22 @@ mod tests {
     fn test_new_with_url() {
         let url = KEY_URL;
 
-        let key_store = KeyStore::new_from(url).unwrap();
+        let key_set = KeySet::new_from(url).unwrap();
 
-        assert_eq!(url, key_store.jkws_url());
+        assert_eq!(url, key_set.key_set_url());
     }
 
     #[test]
     fn test_refresh_keys() {
-        let key_store = KeyStore::new_from(KEY_URL).unwrap();
+        let key_set = KeySet::new_from(KEY_URL).unwrap();
 
-        assert_eq!(KEY_URL, key_store.jkws_url());
-        assert!(key_store.keys_len() > 0);
+        assert_eq!(KEY_URL, key_set.key_set_url());
+        assert!(key_set.keys_len() > 0);
 
-        assert!(key_store.key_by_id("1").is_some());
-        assert!(key_store.key_by_id("2").is_none());
+        assert!(key_set.key_by_id("1").is_some());
+        assert!(key_set.key_by_id("2").is_none());
 
-        let result = key_store.verify_time(TOKEN, time_safe());
+        let result = key_set.verify_time(TOKEN, time_safe());
 
         let jwt = result.unwrap();
 
@@ -107,15 +107,15 @@ mod tests {
     fn test_add_key() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        assert_eq!(0usize, key_store.keys_len());
+        assert_eq!(0usize, key_set.keys_len());
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        assert_eq!(1usize, key_store.keys_len());
+        assert_eq!(1usize, key_set.keys_len());
 
-        let result = key_store.key_by_id("1");
+        let result = key_set.key_by_id("1");
 
         assert!(result.is_some());
 
@@ -130,19 +130,19 @@ mod tests {
     fn test_get_key() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        assert_eq!(0usize, key_store.keys_len());
+        assert_eq!(0usize, key_set.keys_len());
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        assert_eq!(1usize, key_store.keys_len());
+        assert_eq!(1usize, key_set.keys_len());
 
-        let result = key_store.key_by_id("1");
+        let result = key_set.key_by_id("1");
 
         assert!(result.is_some());
 
-        let result = key_store.key_by_id("2");
+        let result = key_set.key_by_id("2");
 
         assert!(result.is_none());
     }
@@ -151,11 +151,11 @@ mod tests {
     fn test_decode_custom_payload() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        let result = key_store.decode(TOKEN);
+        let result = key_set.decode(TOKEN);
 
         assert!(result.is_ok());
 
@@ -172,11 +172,11 @@ mod tests {
     fn test_decode_json_payload() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        let result = key_store.decode(TOKEN);
+        let result = key_set.decode(TOKEN);
 
         assert!(result.is_ok());
 
@@ -191,11 +191,11 @@ mod tests {
     fn test_verify() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        let result = key_store.verify_time(TOKEN, time_safe());
+        let result = key_set.verify_time(TOKEN, time_safe());
 
         assert!(result.is_ok());
 
@@ -205,14 +205,14 @@ mod tests {
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
         assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
 
-        let result = key_store.verify_time(TOKEN, time_nbf());
+        let result = key_set.verify_time(TOKEN, time_nbf());
 
         match result {
             Ok(_) => { panic!() }
             Err(Error{msg: _, typ}) => { assert_eq!(Type::Early, typ); }
         }
 
-        let result = key_store.verify_time(TOKEN, time_exp());
+        let result = key_set.verify_time(TOKEN, time_exp());
 
         match result {
             Ok(_) => { panic!() }
@@ -224,11 +224,11 @@ mod tests {
     fn test_verify_invalid_certificate() {
         let key = JwtKey::new("1", N_INVALID, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        let result = key_store.verify(TOKEN);
+        let result = key_set.verify(TOKEN);
 
         assert!(result.is_err());
     }
@@ -237,16 +237,16 @@ mod tests {
     fn test_verify_invalid_signature() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_store = KeyStore::new();
+        let mut key_set = KeySet::new();
 
-        key_store.add_key(&key);
+        key_set.add_key(&key);
 
-        let result = key_store.verify(TOKEN_INV_CERT);
+        let result = key_set.verify(TOKEN_INV_CERT);
 
         assert!(result.is_err());
 
         // Should still be able to decode:
-        let result = key_store.decode(TOKEN_INV_CERT);
+        let result = key_set.decode(TOKEN_INV_CERT);
 
         let jwt = result.unwrap();
 
@@ -257,9 +257,9 @@ mod tests {
 
     #[test]
     fn test_expired() {
-        let key_store = KeyStore::new();
+        let key_set = KeySet::new();
 
-        let jwk = key_store.decode(TOKEN).unwrap();
+        let jwk = key_set.decode(TOKEN).unwrap();
 
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_EXP + 1, 0);
 
@@ -268,9 +268,9 @@ mod tests {
 
     #[test]
     fn test_not_expired() {
-        let key_store = KeyStore::new();
+        let key_set = KeySet::new();
 
-        let jwk = key_store.decode(TOKEN).unwrap();
+        let jwk = key_set.decode(TOKEN).unwrap();
 
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_EXP - 1, 0);
 
@@ -279,9 +279,9 @@ mod tests {
 
     #[test]
     fn test_nbf() {
-        let key_store = KeyStore::new();
+        let key_set = KeySet::new();
 
-        let jwk = key_store.decode(TOKEN).unwrap();
+        let jwk = key_set.decode(TOKEN).unwrap();
 
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF - 1, 0);
 
@@ -290,9 +290,9 @@ mod tests {
 
     #[test]
     fn test_not_nbf() {
-        let key_store = KeyStore::new();
+        let key_set = KeySet::new();
 
-        let jwk = key_store.decode(TOKEN).unwrap();
+        let jwk = key_set.decode(TOKEN).unwrap();
 
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF + 1, 0);
 
@@ -301,9 +301,9 @@ mod tests {
 
     #[test]
     fn test_valid_exp() {
-        let key_store = KeyStore::new();
+        let key_set = KeySet::new();
 
-        let jwk = key_store.decode(TOKEN).unwrap();
+        let jwk = key_set.decode(TOKEN).unwrap();
 
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF - 1, 0);
 

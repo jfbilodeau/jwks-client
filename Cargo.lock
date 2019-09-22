@@ -451,6 +451,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "jwks-client"
+version = "0.1.1"
+dependencies = [
+ "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest 0.9.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ring 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1049,18 +1061,6 @@ dependencies = [
  "itoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "shared_jwt"
-version = "0.1.0"
-dependencies = [
- "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "reqwest 0.9.20 (registry+https://github.com/rust-lang/crates.io-index)",
- "ring 0.16.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_derive 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

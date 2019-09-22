@@ -46,14 +46,14 @@ impl Clone for JwtKey {
     }
 }
 
-pub struct KeyStore {
+pub struct KeySet {
     key_url: String,
     keys: Vec<JwtKey>,
 }
 
-impl KeyStore {
-    pub fn new() -> KeyStore {
-        let validator = KeyStore {
+impl KeySet {
+    pub fn new() -> KeySet {
+        let validator = KeySet {
             key_url: "".to_owned(),
             keys: vec![],
         };
@@ -61,8 +61,8 @@ impl KeyStore {
         validator
     }
 
-    pub fn new_from(jkws_url: &str) -> Result<KeyStore, Error> {
-        let mut key_store = KeyStore {
+    pub fn new_from(jkws_url: &str) -> Result<KeySet, Error> {
+        let mut key_store = KeySet {
             key_url: jkws_url.to_owned(),
             keys: vec![],
         };
@@ -76,7 +76,7 @@ impl KeyStore {
         self.keys.clear();
     }
 
-    pub fn jkws_url(&self) -> &str {
+    pub fn key_set_url(&self) -> &str {
         &self.key_url
     }
 
