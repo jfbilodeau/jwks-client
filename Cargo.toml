@@ -1,8 +1,11 @@
 [package]
 name = "shared_jwt"
 version = "0.1.0"
-authors = ["J-F Bilodeau <jfbilodeau@chronogears.com>"]
+authors = ["Jean-François Bilodeau <jfbilodeau@chronogears.com>"]
 edition = "2018"
+license = MIT
+homepage = https://github.com/jfbilodeau/jwks-client
+documentation =
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
