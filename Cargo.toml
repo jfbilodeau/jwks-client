@@ -1,10 +1,10 @@
 [package]
 name = "shared_jwt"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jean-François Bilodeau <jfbilodeau@chronogears.com>"]
 edition = "2018"
 keywords = [ "jwt", "jwks", "jwk", "gcp" ]
-categories = [ "web-programming", "cryptography", "authentication" ]
+categories = [ "web-programming", "cryptography", "authentication   " ]
 license = "MIT"
 homepage = "https://github.com/jfbilodeau/jwks-client"
 repository = "https://github.com/jfbilodeau/jwks-client"
