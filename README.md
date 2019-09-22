@@ -34,7 +34,12 @@ The following demonstrates how to load a set of keys from an HTTP address and ve
 ```rust
 use keyset::KeyStore;
 
+<<<<<<< HEAD
 let key_store = KeyStore::new_from("http://mykeyset.com/").unwrap();
+=======
+let jkws_url = "https://...";
+let key_set = KeySet::new_from(jkws_url).unwrap();
+>>>>>>> fade3478dc6e28ac80b39ddccb3bbe315b87e8ab
 
 // ...
 
@@ -58,7 +63,13 @@ use error::{Error, Type};
 
 let key_store = KeyStore::new_from("http://mykeyset.com/").unwrap();
 
+<<<<<<< HEAD
 match key_store.verify(my_token) {
+=======
+let key_set = KeySet::new_from(jwks_url).unwrap();
+
+match key_set.verify(token) {
+>>>>>>> fade3478dc6e28ac80b39ddccb3bbe315b87e8ab
     Ok(jwt) => {
         println!("name={}", jwt.payload().get_str("name").unwrap());
     }
@@ -88,8 +99,12 @@ JWKS-Client can decode a JWT payload (claims) into a struct:
 ```rust
 use serde_derive::Deserialize;
 
+<<<<<<< HEAD
 use jwt::Jwt;
 use keyset::{JwtKey, KeyStore};
+=======
+let key_set = KeySet::new();
+>>>>>>> fade3478dc6e28ac80b39ddccb3bbe315b87e8ab
 
 #[derive(Deserialize)]
 pub struct MyClaims {
