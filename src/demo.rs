@@ -8,10 +8,10 @@ mod demo {
     //----------------------------------------------------------------------------------------------
     #[test]
     fn demo_simple() {
-        use crate::jwks::KeySet;
+        use crate::keyset::KeyStore;
 
         let jkws_url = KEY_URL;
-        let key_set = KeySet::new_from(jkws_url).unwrap();
+        let key_set = KeyStore::new_from(jkws_url).unwrap();
 
         // ...
 
@@ -27,32 +27,77 @@ mod demo {
         }
     }
 
+    #[test]
+    fn demo_into() {
+        use serde_derive::Deserialize;
+
+        use crate::jwt::Jwt;
+        use crate::keyset::{JwtKey, KeyStore};
+
+        #[derive(Deserialize)]
+        pub struct MyClaims {
+            pub iss: String,
+            pub name: String,
+            pub email: String,
+        }
+
+        let key = JwtKey::new("1", N, E);
+
+        let mut key_set = KeyStore::new();
+
+        key_set.add_key(&key);
+
+        let jwt = key_set.decode(TOKEN).unwrap();
+
+        let claims = jwt.payload().into::<MyClaims>().unwrap();
+
+        assert_eq!("https://chronogears.com/test", claims.iss);
+        assert_eq!("Ada Lovelace", claims.name);
+        assert_eq!("alovelace@chronogears.com", claims.email);
+    }
+
+    #[test]
     fn demo_error() {
-        use crate::jwks::KeySet;
         use crate::error::{Error, Type};
+        use crate::keyset::KeyStore;
 
         let jwks_url = KEY_URL;
         let token = TOKEN;
 
-        let key_set = KeySet::new_from(jwks_url).unwrap();
+        let key_set = KeyStore::new_from(jwks_url).unwrap();
 
         match key_set.verify(token) {
             Ok(jwt) => {
                 println!("name={}", jwt.payload().get_str("name").unwrap());
             }
-            Err(Error { msg, typ: Type::Header }) => {
+            Err(Error {
+                msg,
+                typ: Type::Header,
+            }) => {
                 eprintln!("Problem with header. Message: {}", msg);
             }
-            Err(Error { msg, typ: Type::Payload }) => {
+            Err(Error {
+                msg,
+                typ: Type::Payload,
+            }) => {
                 eprintln!("Problem with payload. Message: {}", msg);
             }
-            Err(Error { msg, typ: Type::Signature }) => {
+            Err(Error {
+                msg,
+                typ: Type::Signature,
+            }) => {
                 eprintln!("Problem with signature. Message: {}", msg);
             }
-            Err(Error { msg: _, typ: Type::Expired }) => {
+            Err(Error {
+                msg: _,
+                typ: Type::Expired,
+            }) => {
                 eprintln!("Token is expired.");
             }
-            Err(Error { msg: _, typ: Type::Early }) => {
+            Err(Error {
+                msg: _,
+                typ: Type::Early,
+            }) => {
                 eprintln!("Too early to use token.");
             }
             Err(e) => {
@@ -63,9 +108,9 @@ mod demo {
 
     #[test]
     fn demo_decode() {
-        use crate::jwks::KeySet;
+        use crate::keyset::KeyStore;
 
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let token = TOKEN;
 
@@ -77,8 +122,12 @@ mod demo {
             let result = jwt.payload().get_str("name");
 
             match result {
-                Some(name) => { println!("Welcome, {}!", name); }
-                None => { println!("Welcome, anonymous"); }
+                Some(name) => {
+                    println!("Welcome, {}!", name);
+                }
+                None => {
+                    println!("Welcome, anonymous");
+                }
             }
         }
     }
@@ -87,14 +136,14 @@ mod demo {
     fn demo_keystore() {
         let jwks_url = KEY_URL;
 
-        use crate::jwks::{KeySet, JwtKey};
+        use crate::keyset::{JwtKey, KeyStore};
 
         let my_key = JwtKey::new("my_key_id", "--modulus--", "--exponent--");
 
         let url = KEY_URL;
 
         // Create blank key store
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
         // Add a custom key to the store
         key_set.add_key(&my_key);
         // Number of keys in store

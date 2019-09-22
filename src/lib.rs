@@ -1,6 +1,6 @@
 pub mod error;
 pub mod jwt;
-pub mod jwks;
+pub mod keyset;
 
 #[cfg(test)]
 mod demo;
@@ -21,8 +21,8 @@ mod tests {
 
     use serde_derive::{Deserialize, Serialize};
 
-    use crate::jwks::{JwtKey, KeySet};
-    use crate::error::{Type, Error};
+    use crate::error::{Error, Type};
+    use crate::keyset::{JwtKey, KeyStore};
     use std::alloc::System;
 
     //    const IAT: u64 = 200;
@@ -31,7 +31,7 @@ mod tests {
     const TIME_EXP: u64 = 500;
 
     fn time_nbf() -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF-1, 0)
+        SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF - 1, 0)
     }
 
     fn time_safe() -> SystemTime {
@@ -39,29 +39,30 @@ mod tests {
     }
 
     fn time_exp() -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::new(TIME_EXP+1, 0)
+        SystemTime::UNIX_EPOCH + Duration::new(TIME_EXP + 1, 0)
     }
 
-//    static HEADER: Value = json!({
-//        "alg": "RS256",
-//        "typ": "JWT",
-//        "kid": "1"
-//    });
-//
-//    static PAYLOAD: Value = json!({
-//        "name": "Ada Lovelace",
-//        "iss": "https://chronogears.com/test",
-//        "aud": "test",
-//        "auth_time": 100,
-//        "user_id": "uid123",
-//        "sub": "sbu123",
-//        "iat": IAT,
-//        "exp": EXP,
-//        "nbf": NBF,
-//        "email": "alovelace@chronogears.com"
-//    });
+    //    static HEADER: Value = json!({
+    //        "alg": "RS256",
+    //        "typ": "JWT",
+    //        "kid": "1"
+    //    });
+    //
+    //    static PAYLOAD: Value = json!({
+    //        "name": "Ada Lovelace",
+    //        "iss": "https://chronogears.com/test",
+    //        "aud": "test",
+    //        "auth_time": 100,
+    //        "user_id": "uid123",
+    //        "sub": "sbu123",
+    //        "iat": IAT,
+    //        "exp": EXP,
+    //        "nbf": NBF,
+    //        "email": "alovelace@chronogears.com"
+    //    });
 
-    pub const KEY_URL: &str = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
+    pub const KEY_URL: &str =
+        "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
     pub const E: &str = "AQAB";
     pub const N: &str = "t5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w";
     pub const N_INVALID: &str = "xt5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w==";
@@ -79,14 +80,14 @@ mod tests {
     fn test_new_with_url() {
         let url = KEY_URL;
 
-        let key_set = KeySet::new_from(url).unwrap();
+        let key_set = KeyStore::new_from(url).unwrap();
 
         assert_eq!(url, key_set.key_set_url());
     }
 
     #[test]
     fn test_refresh_keys() {
-        let key_set = KeySet::new_from(KEY_URL).unwrap();
+        let key_set = KeyStore::new_from(KEY_URL).unwrap();
 
         assert_eq!(KEY_URL, key_set.key_set_url());
         assert!(key_set.keys_len() > 0);
@@ -100,14 +101,17 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
+        assert_eq!(
+            "alovelace@chronogears.com",
+            jwt.payload().get_str("email").unwrap()
+        );
     }
 
     #[test]
     fn test_add_key() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         assert_eq!(0usize, key_set.keys_len());
 
@@ -130,7 +134,7 @@ mod tests {
     fn test_get_key() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         assert_eq!(0usize, key_set.keys_len());
 
@@ -151,7 +155,7 @@ mod tests {
     fn test_decode_custom_payload() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         key_set.add_key(&key);
 
@@ -161,7 +165,7 @@ mod tests {
 
         let jwt = result.unwrap();
 
-        let payload = jwt.payload().load_into::<TestPayload>().unwrap();
+        let payload = jwt.payload().into::<TestPayload>().unwrap();
 
         assert_eq!("https://chronogears.com/test", payload.iss);
         assert_eq!("Ada Lovelace", payload.name);
@@ -172,7 +176,7 @@ mod tests {
     fn test_decode_json_payload() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         key_set.add_key(&key);
 
@@ -184,14 +188,17 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
+        assert_eq!(
+            "alovelace@chronogears.com",
+            jwt.payload().get_str("email").unwrap()
+        );
     }
 
     #[test]
     fn test_verify() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         key_set.add_key(&key);
 
@@ -203,20 +210,27 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
+        assert_eq!(
+            "alovelace@chronogears.com",
+            jwt.payload().get_str("email").unwrap()
+        );
 
         let result = key_set.verify_time(TOKEN, time_nbf());
 
         match result {
-            Ok(_) => { panic!() }
-            Err(Error{msg: _, typ}) => { assert_eq!(Type::Early, typ); }
+            Ok(_) => panic!(),
+            Err(Error { msg: _, typ }) => {
+                assert_eq!(Type::Early, typ);
+            }
         }
 
         let result = key_set.verify_time(TOKEN, time_exp());
 
         match result {
-            Ok(_) => { panic!() }
-            Err(Error{msg: _, typ}) => { assert_eq!(Type::Expired, typ); }
+            Ok(_) => panic!(),
+            Err(Error { msg: _, typ }) => {
+                assert_eq!(Type::Expired, typ);
+            }
         }
     }
 
@@ -224,7 +238,7 @@ mod tests {
     fn test_verify_invalid_certificate() {
         let key = JwtKey::new("1", N_INVALID, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         key_set.add_key(&key);
 
@@ -237,7 +251,7 @@ mod tests {
     fn test_verify_invalid_signature() {
         let key = JwtKey::new("1", N, E);
 
-        let mut key_set = KeySet::new();
+        let mut key_set = KeyStore::new();
 
         key_set.add_key(&key);
 
@@ -252,12 +266,15 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
+        assert_eq!(
+            "alovelace@chronogears.com",
+            jwt.payload().get_str("email").unwrap()
+        );
     }
 
     #[test]
     fn test_expired() {
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let jwk = key_set.decode(TOKEN).unwrap();
 
@@ -268,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_not_expired() {
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let jwk = key_set.decode(TOKEN).unwrap();
 
@@ -279,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_nbf() {
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let jwk = key_set.decode(TOKEN).unwrap();
 
@@ -290,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_not_nbf() {
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let jwk = key_set.decode(TOKEN).unwrap();
 
@@ -301,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_valid_exp() {
-        let key_set = KeySet::new();
+        let key_set = KeyStore::new();
 
         let jwk = key_set.decode(TOKEN).unwrap();
 
@@ -310,4 +327,3 @@ mod tests {
         assert!(jwk.early_time(time).unwrap());
     }
 }
-

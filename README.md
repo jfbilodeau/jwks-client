@@ -2,12 +2,24 @@
 
 JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
 
+** IMPORTANT **
+---
+JWKS-Client was designed to work with a project that uses *[Rocket](https://crates.io/crates/rocket)*. Unfortunatly, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client.
+
+To use JWKS-Client with Rocket, use the following dependency in `Cargo.toml`:
+
+```toml
+rocket = { git = "https://github.com/SergioBenitez/Rocket" }
+``` 
+
+Furthermore, be aware that JWKS-Client is still being developed. Some (hopefully minor) breaking changes may happen. Sorry about that!
+
 Features
 ---
 * Download key set from HTTP address
 * Decode JWT tokens into header, payload and signature
 * Verify token signature, expiry and not-before 
-* Can transfer payload in user-defined struct
+* Can transfer header and payload in user-defined struct. See the example below 
 * Consise results (see [error::Type](https://docs.rs/shared_jwt/latest/shared_jwt/error/enum.Type.html) for example)
 * Designed for a production system (not an academic project)
 * Build with Rust stable
@@ -20,16 +32,15 @@ Basic Usage
 The following demonstrates how to load a set of keys from an HTTP address and verify a JWT token using those keys:
 
 ```rust
-use jwks::KeyStore;
+use keyset::KeyStore;
 
-let jkws_url = "https://...";
-let key_set = KeyStore::new_from(jkws_url).unwrap();
+let key_store = KeyStore::new_from("http://mykeyset.com/").unwrap();
 
 // ...
 
-let token = "...";
+let my_token = "...";  // JWT
 
-match key_set.verify(token) {
+match key_store.verify(my_token) {
     Ok(jwt) => {
         println!("name={}", jwt.payload().get_str("name").unwrap());
     }
@@ -42,15 +53,12 @@ match key_set.verify(token) {
 JWKS-Client offers descriptive error results:
 
 ```rust
-use jwks::KeyStore;
+use keyset::KeyStore;
 use error::{Error, Type};
 
-let jwks_url = "http://...";
-let token = "...";
+let key_store = KeyStore::new_from("http://mykeyset.com/").unwrap();
 
-let key_set = KeyStore::new_from(jwks_url).unwrap();
-
-match key_set.verify(token) {
+match key_store.verify(my_token) {
     Ok(jwt) => {
         println!("name={}", jwt.payload().get_str("name").unwrap());
     }
@@ -75,29 +83,40 @@ match key_set.verify(token) {
 }
 ```
 
-JWKS-Client can decode a JWT payload into a struct:
+JWKS-Client can decode a JWT payload (claims) into a struct:
 
 ```rust
-use jwks::KeyStore;
+use serde_derive::Deserialize;
 
-let key_set = KeyStore::new();
+use jwt::Jwt;
+use keyset::{JwtKey, KeyStore};
 
-let token = TOKEN;
-
-let jwt = key_set.decode(token).unwrap();
-
-if jwt.expired().unwrap_or(false) {
-    println!("Sorry, token expired")
-} else {
-    let result = jwt.payload().get_str("name");
-
-    match result {
-        Some(name) => { println!("Welcome, {}!", name); }
-        None => { println!("Welcome, anonymous"); }
-    }
+#[derive(Deserialize)]
+pub struct MyClaims {
+    pub iss: String,
+    pub name: String,
+    pub email: String,
 }
+
+let mut key_set = KeyStore::new_from("http://mykeys.com");
+
+let jwt = key_set.decode(my_token).unwrap();
+
+let claims = jwt.payload().into::<MyClaims>().unwrap();
+
+assert_eq!("https://chronogears.com/test", claims.iss);
+assert_eq!("Ada Lovelace", claims.name);
+assert_eq!("alovelace@chronogears.com", claims.email);
 ```
 
+History
+--- 
+* 0.1.2: (Sorry for the breaking changes)
+  * Rename module `jwks` to `keyset`
+  * Renamed struct `Jwks` to `KeyStore`
+  * Expanded documentation a bit
+  * Fixed some demos
+* 0.1.1: Original version
 
 TODO:
 ---

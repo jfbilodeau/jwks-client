@@ -47,7 +47,7 @@ macro_rules! impl_segment {
             self.json.get(key)?.as_null()
         }
 
-        pub fn load_into<T: DeserializeOwned>(&self) -> Result<T, Error> {
+        pub fn into<T: DeserializeOwned>(&self) -> Result<T, Error> {
             Ok(serde_json::from_value::<T>(self.json.clone()).or(Err(err_inv("Failed to deserialize segment")))?)
         }
     )
@@ -195,7 +195,9 @@ impl Jwt {
         &self.payload
     }
 
-    pub fn signature(&self) -> &String { &self.signature }
+    pub fn signature(&self) -> &String {
+        &self.signature
+    }
 
     pub fn expired(&self) -> Option<bool> {
         self.expired_time(SystemTime::now())
@@ -203,8 +205,8 @@ impl Jwt {
 
     pub fn expired_time(&self, time: SystemTime) -> Option<bool> {
         match self.payload.expiry() {
-            Some(token_time) => { Some(time > token_time) }
-            None => { None }
+            Some(token_time) => Some(time > token_time),
+            None => None,
         }
     }
 
@@ -214,15 +216,15 @@ impl Jwt {
 
     pub fn early_time(&self, time: SystemTime) -> Option<bool> {
         match self.payload.not_before() {
-            Some(token_time) => { Some(time < token_time) }
-            None => { None }
+            Some(token_time) => Some(time < token_time),
+            None => None,
         }
     }
 
     pub fn issued_by(&self, issuer: &str) -> Option<bool> {
         match self.payload.iss() {
-            Some(t) => { Some(t == issuer) }
-            None => { None }
+            Some(t) => Some(t == issuer),
+            None => None,
         }
     }
 
@@ -258,9 +260,7 @@ mod tests {
             "crit": "test_crit"
         });
 
-        let test_header = Header {
-            json,
-        };
+        let test_header = Header { json };
 
         assert_eq!("test_alg", test_header.alg().unwrap());
         assert_eq!("test_enc", test_header.enc().unwrap());
@@ -288,9 +288,7 @@ mod tests {
             "jti": "test_jti",  // f64--not u64 since JSON uses f64
         });
 
-        let payload = Payload {
-            json,
-        };
+        let payload = Payload { json };
 
         assert_eq!("test_iss", payload.iss().unwrap());
         assert_eq!(123456u64, payload.exp().unwrap());
@@ -301,4 +299,3 @@ mod tests {
         assert_eq!("test_jti", payload.jti().unwrap());
     }
 }
-
