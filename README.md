@@ -4,7 +4,7 @@ JWKS-Client is a library written in Rust to decode and validate JWT tokens using
 
 ** IMPORTANT **
 ---
-JWKS-Client was designed to work with a project that uses *[Rocket](https://crates.io/crates/rocket)*. Unfortunately, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client.
+JWKS-Client was designed to work with a project that uses [Rocket](https://crates.io/crates/rocket). Unfortunately, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client.
 
 To use JWKS-Client with Rocket, use the following dependency in `Cargo.toml`:
 

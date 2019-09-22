@@ -1,8 +1,9 @@
+use jwks_client::error::Error;
 use jwks_client::keyset::KeyStore;
 
 fn main() {
     let jkws_url =
-        "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
+        "https://raw.githubusercontent.com/jfbilodeau/jwks-client/0.1.3/test/test-jwks.json";
 
     let key_set = KeyStore::new_from(jkws_url).unwrap();
 
@@ -14,8 +15,8 @@ fn main() {
         Ok(jwt) => {
             println!("name={}", jwt.payload().get_str("name").unwrap());
         }
-        Err(_) => {
-            eprintln!("Could not verify token");
+        Err(Error { msg, typ }) => {
+            eprintln!("Could not verify token. Reason: {}", msg);
         }
     }
 }
