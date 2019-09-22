@@ -1,10 +1,10 @@
-[![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Minimum rustc version](https://img.shields.io/badge/rustc-stable-success.svg)
+[![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![License:Apache](https://img.shields.io/badge/License-Apache-yellow.svg)](https://opensource.org/licenses/Apache-2.0) ![Minimum rustc version](https://img.shields.io/badge/rustc-stable-success.svg)
 
 JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
 
 ** IMPORTANT **
 ---
-JWKS-Client was designed to work with a project that uses *[Rocket](https://crates.io/crates/rocket)*. Unfortunatly, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client.
+JWKS-Client was designed to work with a project that uses *[Rocket](https://crates.io/crates/rocket)*. Unfortunately, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client.
 
 To use JWKS-Client with Rocket, use the following dependency in `Cargo.toml`:
 
@@ -16,6 +16,7 @@ Furthermore, be aware that JWKS-Client is still being developed. Some (hopefully
 
 Features
 ---
+* No panic!
 * Download key set from HTTP address
 * Decode JWT tokens into header, payload and signature
 * Verify token signature, expiry and not-before 
@@ -126,6 +127,10 @@ assert_eq!("alovelace@chronogears.com", claims.email);
 
 History
 --- 
+* 0.1.3:
+  * Change the license to be MIT/Apache
+  * Moved demoes into `./example`
+  
 * 0.1.2: (Sorry for the breaking changes)
   * Rename module `jwks` to `keyset`
   * Renamed struct `Jwks` to `KeyStore`
