@@ -1,6 +1,6 @@
 [package]
 name = "jwks-client"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Jean-François Bilodeau <jfbilodeau@chronogears.com>"]
 edition = "2018"
 keywords = [ "jwt", "jwks", "jwk", "gcp" ]
@@ -13,8 +13,8 @@ description = "Library to validate JWT tokens using JSON Web Key Set (JWKS) (For
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-base64 = "0.10.1"
-reqwest = "0.9.20"
+base64 = "^0.10.0"
+reqwest = "^0.9.0"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
