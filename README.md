@@ -160,10 +160,12 @@ fn main() {
 History
 --- 
 * 0.1.4:
-  * Fixed example--they are now directly from ./examples/*
+  * Updated documentation--specifically how to use JWKS-Client with Rocket
+  * Added the ability to determine if keys should be refreshed from the `KeyStore`
+  * Fixed example on this page--they are now directly from `./examples/*`
 * 0.1.3:
   * Change the license to be MIT/Apache
-  * Moved demoes into `./example`
+  * Moved demos into `./example`
   * Added the ability to verify if keys need to be refreshed in the keystore based on the cache-control header
   
 * 0.1.2: (Sorry for the breaking changes)
