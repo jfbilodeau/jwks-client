@@ -2,9 +2,6 @@ pub mod error;
 pub mod jwt;
 pub mod keyset;
 
-#[cfg(test)]
-mod demo;
-
 ///JWKS client library [![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ///===
 ///JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
@@ -23,7 +20,6 @@ mod tests {
 
     use crate::error::{Error, Type};
     use crate::keyset::{JwtKey, KeyStore};
-    use std::alloc::System;
 
     //    const IAT: u64 = 200;
     const TIME_NBF: u64 = 300;
@@ -61,8 +57,7 @@ mod tests {
     //        "email": "alovelace@chronogears.com"
     //    });
 
-    pub const KEY_URL: &str =
-        "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
+    pub const KEY_URL: &str = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/master/test/test-jwks.json";
     pub const E: &str = "AQAB";
     pub const N: &str = "t5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w";
     pub const N_INVALID: &str = "xt5N44H1mpb5Wlx_0e7CdoKTY8xt-3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn__Zaxx9dnzHbzGCul5W0RLfd3oB3PESwsrQh-oiXVEPTYhvUPQkX0vBfCXJtg_zY2mY1DxKOIiXnZ8PaK_7Sx0aMmvR__0Yy2a5dIAWCmjPsxn-PcGZOkVUm-D5bH1-ZStcA_68r4ZSPix7Szhgl1RoHb9Q6JSekyZqM0Qfwhgb7srZVXC_9_m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T-Ai-4_5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV1w==";
@@ -101,10 +96,7 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!(
-            "alovelace@chronogears.com",
-            jwt.payload().get_str("email").unwrap()
-        );
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
     }
 
     #[test]
@@ -188,10 +180,7 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!(
-            "alovelace@chronogears.com",
-            jwt.payload().get_str("email").unwrap()
-        );
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
     }
 
     #[test]
@@ -210,10 +199,7 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!(
-            "alovelace@chronogears.com",
-            jwt.payload().get_str("email").unwrap()
-        );
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
 
         let result = key_set.verify_time(TOKEN, time_nbf());
 
@@ -266,10 +252,7 @@ mod tests {
 
         assert_eq!("https://chronogears.com/test", jwt.payload().iss().unwrap());
         assert_eq!("Ada Lovelace", jwt.payload().get_str("name").unwrap());
-        assert_eq!(
-            "alovelace@chronogears.com",
-            jwt.payload().get_str("email").unwrap()
-        );
+        assert_eq!("alovelace@chronogears.com", jwt.payload().get_str("email").unwrap());
     }
 
     #[test]
@@ -325,5 +308,19 @@ mod tests {
         let time = SystemTime::UNIX_EPOCH + Duration::new(TIME_NBF - 1, 0);
 
         assert!(jwk.early_time(time).unwrap());
+    }
+
+    #[test]
+    fn test_keys_expired() {
+        let key_store = KeyStore::new();
+
+        assert_eq!(None, key_store.last_refresh_time());
+        assert_eq!(None, key_store.keys_expired());
+
+        let key_store = KeyStore::new_from(KEY_URL).unwrap();
+
+        assert!(key_store.last_refresh_time().is_some());
+        assert!(key_store.keys_expired().is_some());
+        assert_eq!(false, key_store.keys_expired().unwrap());
     }
 }

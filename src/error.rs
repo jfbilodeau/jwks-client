@@ -8,7 +8,8 @@ pub struct Error {
 /// Type of error encountered
 #[derive(Debug, PartialEq)]
 pub enum Type {
-    /// Token is invalid (TODO: Remove this--too generic)
+    /// Token is invalid
+    /// For example, the format of the token is not "HEADER.PAYLOAD.SIGNATURE"
     Invalid,
     /// Token has expired
     Expired,
@@ -31,10 +32,7 @@ pub enum Type {
 }
 
 pub(crate) fn err(msg: &'static str, typ: Type) -> Error {
-    Error {
-        msg,
-        typ
-    }
+    Error { msg, typ }
 }
 
 pub(crate) fn err_inv(msg: &'static str) -> Error {
@@ -78,6 +76,4 @@ pub(crate) fn err_int(msg: &'static str) -> Error {
 }
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}
