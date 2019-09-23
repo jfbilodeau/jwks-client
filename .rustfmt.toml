@@ -167,12 +167,12 @@ max_width = 250
 # Default: true
 #   enum_trailing_comma =
 
-# Report all, none or unnumbered occurrences of TODO in source file comments.
+# Report all, none or unnumbered occurrences of _TODO_ in source file comments.
 # Values: Always | Unnumbered | Never
 # Default: Never
 #   report_todo =
 
-# Report all, none or unnumbered occurrences of FIXME in source file comments.
+# Report all, none or unnumbered occurrences of _FIXME_ in source file comments.
 # Values: Always | Unnumbered | Never
 # Default: Never
 #   report_fixme =

@@ -100,13 +100,6 @@ JWKS-Client can decode a JWT payload (claims) into a struct:
 ```rust
 use serde_derive::Deserialize;
 
-<<<<<<< HEAD
-use jwt::Jwt;
-use keyset::{JwtKey, KeyStore};
-=======
-let key_set = KeySet::new();
->>>>>>> fade3478dc6e28ac80b39ddccb3bbe315b87e8ab
-
 #[derive(Deserialize)]
 pub struct MyClaims {
     pub iss: String,
@@ -114,9 +107,9 @@ pub struct MyClaims {
     pub email: String,
 }
 
-let mut key_set = KeyStore::new_from("http://mykeys.com");
+let mut key_store = KeyStore::new_from("http://mykeys.com");
 
-let jwt = key_set.decode(my_token).unwrap();
+let jwt = key_store.decode(my_token).unwrap();
 
 let claims = jwt.payload().into::<MyClaims>().unwrap();
 
@@ -130,6 +123,7 @@ History
 * 0.1.3:
   * Change the license to be MIT/Apache
   * Moved demoes into `./example`
+  * Added the ability to verify if keys need to be refreshed in the keystore based on the cache-control header
   
 * 0.1.2: (Sorry for the breaking changes)
   * Rename module `jwks` to `keyset`
@@ -140,8 +134,7 @@ History
 
 TODO:
 ---
-* More documentation :P
-* Extract expiration time of keys from HTTP request
-* Automatically refresh keys in background
+* Lots More documentation :P
+* Automatically refresh keys
 
 (Made with ❤️ with Rust)

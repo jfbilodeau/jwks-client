@@ -1,6 +1,6 @@
 [package]
 name = "jwks-client"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Jean-François Bilodeau <jfbilodeau@chronogears.com>"]
 edition = "2018"
 keywords = [ "jwt", "jwks", "jwk", "gcp" ]
