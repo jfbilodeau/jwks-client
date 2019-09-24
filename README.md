@@ -159,6 +159,8 @@ fn main() {
 
 History
 --- 
+* 0.1.5:
+  * Added `readme = "README.md"` to `Cargo.toml`
 * 0.1.4:
   * Updated documentation--specifically how to use JWKS-Client with Rocket
   * Added the ability to determine if keys should be refreshed from the `KeyStore`
