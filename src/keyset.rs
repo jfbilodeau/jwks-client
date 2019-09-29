@@ -11,6 +11,7 @@ use serde_json::Value;
 
 use crate::error::*;
 use crate::jwt::*;
+use std::alloc::System;
 
 type HeaderBody = String;
 pub type Signature = String;
@@ -51,8 +52,10 @@ impl Clone for JwtKey {
 pub struct KeyStore {
     key_url: String,
     keys: Vec<JwtKey>,
-    check: Option<SystemTime>,
-    expire: Option<SystemTime>,
+    refresh_interval: f64,
+    load_time: Option<SystemTime>,
+    expire_time: Option<SystemTime>,
+    refresh_time: Option<SystemTime>,
 }
 
 impl KeyStore {
@@ -60,20 +63,19 @@ impl KeyStore {
         let validator = KeyStore {
             key_url: "".to_owned(),
             keys: vec![],
-            check: None,
-            expire: None,
+            refresh_interval: 0.5,
+            load_time: None,
+            expire_time: None,
+            refresh_time: None,
         };
 
         validator
     }
 
     pub fn new_from(jkws_url: &str) -> Result<KeyStore, Error> {
-        let mut key_store = KeyStore {
-            key_url: jkws_url.to_owned(),
-            keys: vec![],
-            check: None,
-            expire: None,
-        };
+        let mut key_store = KeyStore::new();
+
+        key_store.key_url = jkws_url.to_string();
 
         key_store.load_keys()?;
 
@@ -104,11 +106,17 @@ impl KeyStore {
 
         let mut response = reqwest::get(&self.key_url).or(Err(err_con("Could not download JWKS")))?;
 
+        let load_time = SystemTime::now();
+        self.load_time = Some(load_time);
+
         let result = KeyStore::cache_max_age(&mut response);
 
         if let Ok(value) = result {
-            let expire = SystemTime::now() + Duration::new(value, 0);
-            self.expire = Some(expire);
+            let expire = load_time + Duration::new(value, 0);
+            self.expire_time = Some(expire);
+            let refresh_time = (value as f64 * self.refresh_interval) as u64;
+            let refresh = load_time + Duration::new(refresh_time, 0);
+            self.refresh_time = Some(refresh);
         }
 
         let result = response.json::<JwtKeys>();
@@ -116,8 +124,6 @@ impl KeyStore {
         let jwks = result.or(Err(err_int("Failed to parse keys")))?;
 
         jwks.keys.iter().for_each(|k| self.add_key(k));
-
-        self.check = Some(SystemTime::now());
 
         Ok(())
     }
@@ -127,7 +133,7 @@ impl KeyStore {
 
         let header_text = header.to_str().map_err(|_| ())?;
 
-        let re = Regex::new("max-age\\w*=\\w*(\\d)+").map_err(|_| ())?;
+        let re = Regex::new("max-age\\s*=\\s*(\\d+)").map_err(|_| ())?;
 
         let captures = re.captures(header_text).ok_or(())?;
 
@@ -140,14 +146,17 @@ impl KeyStore {
         Ok(value)
     }
 
+    /// Fetch a key by key id (KID)
     pub fn key_by_id(&self, kid: &str) -> Option<&JwtKey> {
         self.keys.iter().find(|k| k.kid == kid)
     }
 
+    /// Number of keys in keystore
     pub fn keys_len(&self) -> usize {
         self.keys.len()
     }
 
+    /// Manually add a key to the keystore
     pub fn add_key(&mut self, key: &JwtKey) {
         self.keys.push(key.clone());
     }
@@ -204,19 +213,82 @@ impl KeyStore {
         Ok(jwt)
     }
 
+    /// Verify a JWT token.
+    /// If the token is valid, it is returned.
+    ///
+    /// A token is considered valid if:
+    /// * Is well formed
+    /// * Has a `kid` field that matches a public signature `kid
+    /// * Signature matches public key
+    /// * It is not expired
+    /// * The `nbf` is not set to before now
     pub fn verify(&self, token: &str) -> Result<Jwt, Error> {
         self.verify_time(token, SystemTime::now())
     }
 
-    pub fn last_refresh_time(&self) -> Option<SystemTime> {
-        self.check
+    /// Time at which the keys were last refreshed
+    pub fn last_load_time(&self) -> Option<SystemTime> {
+        self.load_time
     }
 
+    /// True if the keys are expired and should be refreshed
+    ///
+    /// None if keys do not have an expiration time
     pub fn keys_expired(&self) -> Option<bool> {
-        match self.expire {
-            Some(expire) => Some(expire > SystemTime::now()),
+        match self.expire_time {
+            Some(expire) => Some(expire <= SystemTime::now()),
             None => None,
         }
+    }
+
+    /// Specifies the interval (as a fraction) when the key store should refresh it's key.
+    ///
+    /// The default is 0.5, meaning that keys should be refreshed when we are halfway through the expiration time (similar to DHCP).
+    ///
+    /// This method does _not_ update the refresh time. Call `load_keys` to force an update on the refresh time property.
+    pub fn set_refresh_interval(&mut self, interval: f64) {
+        self.refresh_interval = interval;
+    }
+
+    /// Get the current fraction time to check for token refresh time.
+    pub fn refresh_interval(&self) -> f64 {
+        self.refresh_interval
+    }
+
+    /// The time at which the keys were loaded
+    /// None if the keys were never loaded via `load_keys` or `load_keys_from`.
+    pub fn load_time(&self) -> Option<SystemTime> {
+        self.load_time
+    }
+
+    /// Get the time at which the keys are considered expired
+    pub fn expire_time(&self) -> Option<SystemTime> {
+        self.expire_time
+    }
+
+    /// time at which keys should be refreshed.
+    pub fn refresh_time(&self) -> Option<SystemTime> {
+        self.refresh_time
+    }
+
+    /// Returns `Option<true>` if keys should be refreshed based on the given `current_time`.
+    ///
+    /// None is returned if the key store does not have a refresh time available. For example, the
+    /// `load_keys` function was not called or the HTTP server did not provide a  
+    pub fn should_refresh_time(&self, current_time: SystemTime) -> Option<bool> {
+        if let Some(refresh_time) = self.refresh_time {
+            return Some(refresh_time <= current_time);
+        }
+
+        None
+    }
+
+    /// Returns `Option<true>` if keys should be refreshed based on the system time.
+    ///
+    /// None is returned if the key store does not have a refresh time available. For example, the
+    /// `load_keys` function was not called or the HTTP server did not provide a  
+    pub fn should_refresh(&self) -> Option<bool> {
+        self.should_refresh_time(SystemTime::now())
     }
 }
 
@@ -238,6 +310,3 @@ fn decode_segment<T: DeserializeOwned>(segment: &str) -> Result<T, Error> {
 
     Ok(decoded)
 }
-
-#[cfg(test)]
-mod tests {}

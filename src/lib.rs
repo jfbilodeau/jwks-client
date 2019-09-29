@@ -314,13 +314,51 @@ mod tests {
     fn test_keys_expired() {
         let key_store = KeyStore::new();
 
-        assert_eq!(None, key_store.last_refresh_time());
+        assert_eq!(None, key_store.last_load_time());
         assert_eq!(None, key_store.keys_expired());
 
         let key_store = KeyStore::new_from(KEY_URL).unwrap();
 
-        assert!(key_store.last_refresh_time().is_some());
+        assert!(key_store.last_load_time().is_some());
         assert!(key_store.keys_expired().is_some());
         assert_eq!(false, key_store.keys_expired().unwrap());
+    }
+
+    #[test]
+    fn test_should_refresh() {
+        let mut key_store = KeyStore::new();
+
+        assert_eq!(0.5, key_store.refresh_interval());
+        assert_eq!(None, key_store.expire_time());
+        assert_eq!(None, key_store.keys_expired());
+        assert_eq!(None, key_store.last_load_time());
+        assert_eq!(None, key_store.should_refresh());
+
+        key_store.set_refresh_interval(0.75);
+        assert_eq!(0.75, key_store.refresh_interval());
+
+        key_store.set_refresh_interval(0.5);
+
+        key_store.load_keys_from(KEY_URL);
+
+        assert_eq!(0.5, key_store.refresh_interval());
+        assert_ne!(None, key_store.expire_time());
+        assert_ne!(None, key_store.keys_expired());
+        assert_ne!(None, key_store.last_load_time());
+        assert_eq!(Some(false), key_store.should_refresh());
+
+        let key_duration = key_store.expire_time().unwrap().duration_since(key_store.load_time().unwrap());
+        let key_duration = key_duration.unwrap();
+
+        let refresh_time = key_store.load_time().unwrap() + (key_duration / 2);
+
+        assert_eq!(Some(refresh_time), key_store.refresh_time());
+
+        // Boundary test
+        let just_before = refresh_time - Duration::new(1, 0);
+        assert_eq!(Some(false), key_store.should_refresh_time(just_before));
+
+        let just_after = refresh_time + Duration::new(1, 0);
+        assert_eq!(Some(true), key_store.should_refresh_time(just_after));
     }
 }
