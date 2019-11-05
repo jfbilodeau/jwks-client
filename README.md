@@ -2,8 +2,7 @@
 
 JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
 
-** IMPORTANT **
----
+## ** IMPORTANT **
 JWKS-Client was designed to work with a project that uses [Rocket](https://crates.io/crates/rocket). Unfortunately, the version of Rocket in [crates.io](https://crates.io) is not compatible with the version of [Ring](https://crates.io/crates/ring) required for JWKS-Client. Until the next version of Rocket is published, consider using the following in your `Cargo.toml`:
 
 ```toml
@@ -19,24 +18,22 @@ git = "https://github.com/jfbilodeau/Rocket"
 
 ``` 
 
-Furthermore, be aware that JWKS-Client is still being developed. Some (hopefully minor) breaking changes may happen. Sorry about that!
-
 Features
 ---
 
-###Library wide:
+### Library wide:
 * No panic!
 * Build with Rust stable
 * Designed for a production system (not an academic project)
 * Consise results (see [error::Type](https://docs.rs/shared_jwt/latest/shared_jwt/error/enum.Type.html) for example)
 
-###JWKS key store
+### JWKS key store
 * Download key set from HTTP address
 * Decode JWT tokens into header, payload and signature
 * Verify token signature, expiry and not-before
 * Determine when keys should be refreshed
   
-###JWT: 
+### JWT: 
 * Transfer header and payload in user-defined struct. See the example below[^1]
 * Accessor for standard header and payload fields
 
