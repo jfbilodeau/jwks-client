@@ -25,7 +25,7 @@ Features
 * No panic!
 * Build with Rust stable
 * Designed for a production system (not an academic project)
-* Consise results (see [error::Type](https://docs.rs/shared_jwt/latest/shared_jwt/error/enum.Type.html) for example)
+* Concise results (see [error::Type](https://docs.rs/shared_jwt/latest/shared_jwt/error/enum.Type.html) for example)
 
 ### JWKS key store
 * Download key set from HTTP address
@@ -38,7 +38,7 @@ Features
 * Accessor for standard header and payload fields
 
 
-JWKS-Client was create specifically to decode GCP/Firebase JWT but should be useable with little to no modification. Contact me to propose support for different JWKS key store. Feedback, suggestions, complaints and critisism is appreciated.
+JWKS-Client was create specifically to decode GCP/Firebase JWT but should be useable with little to no modification. Contact me to propose support for different JWKS key store. Feedback, suggestions, complaints and criticism is appreciated.
 
 Basic Usage
 ---
