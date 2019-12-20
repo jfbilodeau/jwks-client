@@ -17,11 +17,11 @@ pub type Signature = String;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtKey {
-    #[serde(default)]
+    #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
     pub e: String,
     pub kty: String,
     pub alg: String,
-    #[serde(default)]
+    #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
     pub n: String,
     pub kid: String,
 }

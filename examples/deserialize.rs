@@ -10,7 +10,7 @@ fn main() {
         pub email: String,
     }
 
-    let url = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/0.1.3/test/test-jwks.json";
+    let url = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/0.1.8/test/test-jwks.json";
 
     let key_store = KeyStore::new_from(url).unwrap();
 
