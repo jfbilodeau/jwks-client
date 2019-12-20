@@ -11,16 +11,17 @@ use serde_json::Value;
 
 use crate::error::*;
 use crate::jwt::*;
-use std::alloc::System;
 
 type HeaderBody = String;
 pub type Signature = String;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtKey {
+    #[serde(default)]
     pub e: String,
     pub kty: String,
     pub alg: String,
+    #[serde(default)]
     pub n: String,
     pub kid: String,
 }

@@ -1,6 +1,15 @@
 {
   "keys": [
     {
+      "kid": "NotSupportedYet",
+      "kty": "EC",
+      "alg": "ES256",
+      "use": "sig",
+      "crv": "P-256",
+      "x": "123",
+      "y": "456"
+    },
+    {
       "e": "AQAB",
       "alg": "RS256",
       "use": "sig",
