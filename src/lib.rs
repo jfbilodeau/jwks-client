@@ -16,7 +16,7 @@ pub mod keyset;
 mod tests {
     use std::time::{Duration, SystemTime};
 
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
 
     use crate::error::{Error, Type};
     use crate::keyset::{JwtKey, KeyStore};
@@ -56,14 +56,14 @@ mod tests {
     fn test_new_with_url() {
         let url = KEY_URL;
 
-        let key_set = KeyStore::new_from(url).unwrap();
+        let key_set = tokio_test::block_on(KeyStore::new_from(url)).unwrap();
 
         assert_eq!(url, key_set.key_set_url());
     }
 
     #[test]
     fn test_refresh_keys() {
-        let key_set = KeyStore::new_from(KEY_URL).unwrap();
+        let key_set = tokio_test::block_on(KeyStore::new_from(KEY_URL)).unwrap();
 
         assert_eq!(KEY_URL, key_set.key_set_url());
         assert!(key_set.keys_len() > 0);
@@ -298,7 +298,7 @@ mod tests {
         assert_eq!(None, key_store.last_load_time());
         assert_eq!(None, key_store.keys_expired());
 
-        let key_store = KeyStore::new_from(KEY_URL).unwrap();
+        let key_store = tokio_test::block_on(KeyStore::new_from(KEY_URL)).unwrap();
 
         assert!(key_store.last_load_time().is_some());
         assert!(key_store.keys_expired().is_some());
@@ -320,7 +320,7 @@ mod tests {
 
         key_store.set_refresh_interval(0.5);
 
-        key_store.load_keys_from(KEY_URL);
+        tokio_test::block_on(key_store.load_keys_from(KEY_URL)).unwrap();
 
         assert_eq!(0.5, key_store.refresh_interval());
         assert_ne!(None, key_store.expire_time());

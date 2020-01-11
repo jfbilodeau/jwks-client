@@ -1,10 +1,11 @@
 use jwks_client::error::Error;
 use jwks_client::keyset::KeyStore;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let jkws_url = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/0.1.8/test/test-jwks.json";
 
-    let key_set = KeyStore::new_from(jkws_url).unwrap();
+    let key_set = KeyStore::new_from(jkws_url).await.unwrap();
 
     // ...
 
