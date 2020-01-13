@@ -5,7 +5,10 @@ use regex::Regex;
 use reqwest;
 use reqwest::Response;
 use ring::signature::{RsaPublicKeyComponents, RSA_PKCS1_2048_8192_SHA256};
-use serde::{de::DeserializeOwned, {Deserialize, Serialize}};
+use serde::{
+    de::DeserializeOwned,
+    {Deserialize, Serialize},
+};
 use serde_json::Value;
 
 use crate::error::*;
@@ -60,7 +63,7 @@ pub struct KeyStore {
 
 impl KeyStore {
     pub fn new() -> KeyStore {
-        let validator = KeyStore {
+        let key_store = KeyStore {
             key_url: "".to_owned(),
             keys: vec![],
             refresh_interval: 0.5,
@@ -69,7 +72,7 @@ impl KeyStore {
             refresh_time: None,
         };
 
-        validator
+        key_store
     }
 
     pub async fn new_from(jkws_url: &str) -> Result<KeyStore, Error> {
@@ -104,8 +107,7 @@ impl KeyStore {
             pub keys: Vec<JwtKey>,
         }
 
-        let mut response = reqwest::get(&self.key_url).await
-            .map_err(|_| err_con("Could not download JWKS"))?;
+        let mut response = reqwest::get(&self.key_url).await.map_err(|_| err_con("Could not download JWKS"))?;
 
         let load_time = SystemTime::now();
         self.load_time = Some(load_time);
@@ -120,8 +122,7 @@ impl KeyStore {
             self.refresh_time = Some(refresh);
         }
 
-        let jwks = response.json::<JwtKeys>().await
-            .map_err(|_| err_int("Failed to parse keys"))?;
+        let jwks = response.json::<JwtKeys>().await.map_err(|_| err_int("Failed to parse keys"))?;
 
         jwks.keys.iter().for_each(|k| self.add_key(k));
 
