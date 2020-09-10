@@ -2,7 +2,7 @@ pub mod error;
 pub mod keyset;
 
 pub use error::Error;
-pub use keyset::{KeyStore, JwtKey};
+pub use keyset::{JwtKey, KeyStore};
 
 ///JWKS client library [![Build Status](https://travis-ci.com/jfbilodeau/jwks-client.svg?branch=master)](https://travis-ci.com/jfbilodeau/jwks-client) [![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ///===
@@ -128,7 +128,7 @@ mod tests {
 
         assert_eq!(0usize, key_set.keys_len());
 
-        key_set.add_key("1".to_owned(), key);
+        key_set.add_key(key);
 
         assert_eq!(1usize, key_set.keys_len());
 
@@ -145,7 +145,7 @@ mod tests {
 
         assert_eq!(0usize, key_set.keys_len());
 
-        key_set.add_key("1".to_owned(), key);
+        key_set.add_key(key);
 
         assert_eq!(1usize, key_set.keys_len());
 
@@ -164,7 +164,7 @@ mod tests {
 
         let mut key_set = KeyStore::new();
 
-        key_set.add_key("1".to_owned(), key);
+        key_set.add_key(key);
 
         let validation = jwt::Validation {
             validate_nbf: true,
@@ -201,7 +201,7 @@ mod tests {
 
         let mut key_set = KeyStore::new();
 
-        key_set.add_key("1".to_owned(), key);
+        key_set.add_key(key);
 
         let validation = jwt::Validation {
             validate_nbf: true,
@@ -224,7 +224,7 @@ mod tests {
 
         let mut key_set = KeyStore::new();
 
-        key_set.add_key("1".to_owned(), key);
+        key_set.add_key(key);
 
         let validation = jwt::Validation {
             validate_nbf: true,

@@ -15,7 +15,7 @@ pub enum ErrorKind {
     /// Could not download key set
     Connection,
     /// Unsupported key type, only RSA is currently supported
-    UnsupportedKeyType,
+    UnsupportedKeyType(String),
     /// Algorithm mismatch - algorithm of token doesn't match intended algorithm of key
     AlgorithmMismatch,
     /// Internal problem (Signals a serious bug or fatal error)

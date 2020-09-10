@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use std::{convert::TryFrom, convert::TryInto};
 
 use jsonwebtoken::{Algorithm, DecodingKey, TokenData, Validation};
 use regex::Regex;
@@ -9,51 +9,68 @@ use serde::{de::DeserializeOwned, Deserialize};
 use crate::error::*;
 
 #[derive(Debug, Deserialize)]
-pub struct JwtKey {
-    #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
-    pub e: String,
-    pub kty: String,
+pub struct JWK {
     pub alg: jsonwebtoken::Algorithm,
-    #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
-    pub n: String,
     pub kid: String,
+    pub kty: String,
+    pub e: Option<String>,
+    pub n: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct JwtKey {
+    pub alg: jsonwebtoken::Algorithm,
+    pub kid: String,
+    pub kind: JwtKeyKind,
+}
+
+#[derive(Debug)]
+pub enum JwtKeyKind {
+    RSA(DecodingKey<'static>),
+    UnsupportedKty(String),
 }
 
 impl JwtKey {
-    pub fn new_rsa256(kid: &str, n: &str, e: &str) -> JwtKey {
+    pub fn new(kid: &str, alg: Algorithm, key: DecodingKey<'static>) -> JwtKey {
         JwtKey {
-            e: e.to_owned(),
-            kty: "RSA".to_string(),
-            alg: Algorithm::RS256,
-            n: n.to_owned(),
+            alg,
             kid: kid.to_owned(),
+            kind: JwtKeyKind::RSA(key),
         }
     }
 
-    fn decoding_key(&self) -> Result<DecodingKey<'_>, Error> {
-        if self.kty != "RSA" {
-            return Err(err("Only RSA key type is supported", ErrorKind::UnsupportedKeyType));
+    pub fn new_rsa256(kid: &str, n: &str, e: &str) -> JwtKey {
+        JwtKey {
+            alg: Algorithm::RS256,
+            kid: kid.to_owned(),
+            kind: JwtKeyKind::RSA(DecodingKey::from_rsa_components(n, e).into_static()),
         }
+    }
 
-        Ok(DecodingKey::from_rsa_components(&self.n, &self.e))
+    pub fn decoding_key(&self) -> Result<&DecodingKey, Error> {
+        match &self.kind {
+            JwtKeyKind::RSA(key) => Ok(key),
+            JwtKeyKind::UnsupportedKty(kty) => Err(err("Unsupported key type", ErrorKind::UnsupportedKeyType(kty.to_owned()))),
+        }
     }
 }
 
-impl Clone for JwtKey {
-    fn clone(&self) -> Self {
-        JwtKey {
-            e: self.e.clone(),
-            kty: self.kty.clone(),
-            alg: self.alg,
-            n: self.n.clone(),
-            kid: self.kid.clone(),
-        }
+impl TryFrom<JWK> for JwtKey {
+    type Error = Error;
+
+    fn try_from(JWK { kid, alg, kty, n, e }: JWK) -> Result<Self, Error> {
+        let kind = match (kty.as_ref(), n, e) {
+            ("RSA", Some(n), Some(e)) => JwtKeyKind::RSA(DecodingKey::from_rsa_components(&n, &e).into_static()),
+            ("RSA", _, _) => return Err(err("RSA key misses parameters", ErrorKind::Key)),
+            (_, _, _) => JwtKeyKind::UnsupportedKty(kty),
+        };
+        Ok(JwtKey { kid, alg, kind })
     }
 }
 
 pub struct KeyStore {
     key_url: String,
-    keys: HashMap<String, JwtKey>,
+    keys: Vec<JwtKey>,
     refresh_interval: f64,
     load_time: Option<SystemTime>,
     expire_time: Option<SystemTime>,
@@ -64,7 +81,7 @@ impl KeyStore {
     pub fn new() -> KeyStore {
         KeyStore {
             key_url: "".to_owned(),
-            keys: HashMap::new(),
+            keys: Vec::new(),
             refresh_interval: 0.5,
             load_time: None,
             expire_time: None,
@@ -101,7 +118,7 @@ impl KeyStore {
     pub async fn load_keys(&mut self) -> Result<(), Error> {
         #[derive(Deserialize)]
         pub struct JwtKeys {
-            pub keys: Vec<JwtKey>,
+            pub keys: Vec<JWK>,
         }
 
         let mut response = reqwest::get(&self.key_url).await.map_err(|_| err_con("Could not download JWKS"))?;
@@ -122,7 +139,7 @@ impl KeyStore {
         let jwks = response.json::<JwtKeys>().await.map_err(|_| err_int("Failed to parse keys"))?;
 
         for jwk in jwks.keys {
-            self.add_key(jwk.kid.clone(), jwk);
+            self.add_key(jwk.try_into()?);
         }
 
         Ok(())
@@ -148,7 +165,7 @@ impl KeyStore {
 
     /// Fetch a key by key id (KID)
     pub fn key_by_id(&self, kid: &str) -> Option<&JwtKey> {
-        self.keys.get(kid)
+        self.keys.iter().find(|key| key.kid == kid)
     }
 
     /// Number of keys in keystore
@@ -157,8 +174,8 @@ impl KeyStore {
     }
 
     /// Manually add a key to the keystore
-    pub fn add_key(&mut self, kid: String, key: JwtKey) {
-        self.keys.insert(kid, key);
+    pub fn add_key(&mut self, key: JwtKey) {
+        self.keys.push(key);
     }
 
     /// Verify a JWT token.
@@ -181,7 +198,7 @@ impl KeyStore {
             return Err(err("Token and its key have non-matching algorithms", ErrorKind::AlgorithmMismatch));
         }
 
-        let data = jsonwebtoken::decode(token, &key.decoding_key()?, &validation).map_err(err_jwt)?;
+        let data = jsonwebtoken::decode(token, key.decoding_key()?, &validation).map_err(err_jwt)?;
 
         Ok(data)
     }
