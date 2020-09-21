@@ -1,78 +1,45 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Error {
     /// Debug message associated with error
     pub msg: &'static str,
-    pub typ: Type,
+    pub kind: ErrorKind,
 }
 
 /// Type of error encountered
-#[derive(Debug, PartialEq)]
-pub enum Type {
-    /// Token is invalid
-    /// For example, the format of the token is not "HEADER.PAYLOAD.SIGNATURE"
-    Invalid,
-    /// Token has expired
-    Expired,
-    /// Not Before (nbf) is set and it's too early to use the token
-    Early,
-    /// Problem with certificate
-    Certificate,
+#[derive(Debug)]
+pub enum ErrorKind {
+    /// An error decoding or validating a token
+    JwtDecodeError(Box<jsonwebtoken::errors::ErrorKind>),
     /// Problem with key
     Key,
     /// Could not download key set
     Connection,
-    /// Problem with JWT header
-    Header,
-    /// Problem with JWT payload
-    Payload,
-    /// Problem with JWT signature
-    Signature,
+    /// Unsupported key type, only RSA is currently supported
+    UnsupportedKeyType(String),
+    /// Algorithm mismatch - algorithm of token doesn't match intended algorithm of key
+    AlgorithmMismatch,
     /// Internal problem (Signals a serious bug or fatal error)
     Internal,
 }
 
-pub(crate) fn err(msg: &'static str, typ: Type) -> Error {
-    Error { msg, typ }
-}
-
-pub(crate) fn err_inv(msg: &'static str) -> Error {
-    err(msg, Type::Invalid)
-}
-
-pub(crate) fn err_exp(msg: &'static str) -> Error {
-    err(msg, Type::Expired)
-}
-
-pub(crate) fn err_nbf(msg: &'static str) -> Error {
-    err(msg, Type::Early)
-}
-
-pub(crate) fn err_cer(msg: &'static str) -> Error {
-    err(msg, Type::Certificate)
+pub(crate) fn err(msg: &'static str, kind: ErrorKind) -> Error {
+    Error { msg, kind }
 }
 
 pub(crate) fn err_key(msg: &'static str) -> Error {
-    err(msg, Type::Key)
+    err(msg, ErrorKind::Key)
 }
 
 pub(crate) fn err_con(msg: &'static str) -> Error {
-    err(msg, Type::Connection)
-}
-
-pub(crate) fn err_hea(msg: &'static str) -> Error {
-    err(msg, Type::Header)
-}
-
-pub(crate) fn err_pay(msg: &'static str) -> Error {
-    err(msg, Type::Payload)
-}
-
-pub(crate) fn err_sig(msg: &'static str) -> Error {
-    err(msg, Type::Signature)
+    err(msg, ErrorKind::Connection)
 }
 
 pub(crate) fn err_int(msg: &'static str) -> Error {
-    err(msg, Type::Internal)
+    err(msg, ErrorKind::Internal)
+}
+
+pub(crate) fn err_jwt(error: jsonwebtoken::errors::Error) -> Error {
+    err("", ErrorKind::JwtDecodeError(Box::new(error.into_kind())))
 }
 
 #[cfg(test)]
