@@ -1,8 +1,20 @@
+use std::fmt::{Display, Formatter};
+use std::fmt;
+
 #[derive(Debug, PartialEq)]
 pub struct Error {
     /// Debug message associated with error
     pub msg: &'static str,
     pub typ: Type,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}: {}", self.typ, self.msg)
+    }
+}
+
+impl std::error::Error for Error {
 }
 
 /// Type of error encountered
