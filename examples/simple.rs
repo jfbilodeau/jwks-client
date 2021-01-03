@@ -4,7 +4,7 @@ use jwks_client::keyset::KeyStore;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let jkws_url = "https://raw.githubusercontent.com/jfbilodeau/jwks-client/0.1.8/test/test-jwks.json";
 
-    let key_set = KeyStore::new_from(jkws_url).await.unwrap();
+    let key_set = KeyStore::new_from(jkws_url.to_owned()).await.unwrap();
 
     // ...
 

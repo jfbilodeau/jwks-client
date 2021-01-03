@@ -75,10 +75,10 @@ impl KeyStore {
         key_store
     }
 
-    pub async fn new_from(jkws_url: &str) -> Result<KeyStore, Error> {
+    pub async fn new_from(jkws_url: String) -> Result<KeyStore, Error> {
         let mut key_store = KeyStore::new();
 
-        key_store.key_url = jkws_url.to_string();
+        key_store.key_url = jkws_url;
 
         key_store.load_keys().await?;
 
@@ -93,8 +93,8 @@ impl KeyStore {
         &self.key_url
     }
 
-    pub async fn load_keys_from(&mut self, url: &str) -> Result<(), Error> {
-        self.key_url = url.to_owned();
+    pub async fn load_keys_from(&mut self, url: String) -> Result<(), Error> {
+        self.key_url = url;
 
         self.load_keys().await?;
 
