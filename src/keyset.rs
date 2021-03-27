@@ -22,7 +22,7 @@ pub struct JwtKey {
     #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
     pub e: String,
     pub kty: String,
-    pub alg: String,
+    pub alg: Option<String>,
     #[serde(default)] // https://github.com/jfbilodeau/jwks-client/issues/1
     pub n: String,
     pub kid: String,
@@ -33,7 +33,7 @@ impl JwtKey {
         JwtKey {
             e: e.to_owned(),
             kty: "JTW".to_string(),
-            alg: "RS256".to_string(),
+            alg: Some("RS256".to_string()),
             n: n.to_owned(),
             kid: kid.to_owned(),
         }
