@@ -23,4 +23,3 @@ ring = "^0.16.0"
 
 [dev-dependencies]
 tokio = {version = "1", features = ["macros", "rt-multi-thread"]}
-tokio-test = "0.4"
