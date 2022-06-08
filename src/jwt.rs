@@ -7,11 +7,9 @@ use serde_json::{Map, Value};
 use crate::error::{err_inv, Error};
 
 macro_rules! impl_segment {
-    () => (
+    () => {
         pub fn new(json: Value) -> Self {
-            Self {
-                json
-            }
+            Self { json }
         }
 
         pub fn get_str(&self, key: &str) -> Option<&str> {
@@ -47,9 +45,9 @@ macro_rules! impl_segment {
         }
 
         pub fn into<T: DeserializeOwned>(&self) -> Result<T, Error> {
-            Ok(serde_json::from_value::<T>(self.json.clone()).or(Err(err_inv("Failed to deserialize segment")))?)
+            serde_json::from_value::<T>(self.json.clone()).or(Err(err_inv("Failed to deserialize segment")))
         }
-    )
+    };
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -130,15 +128,15 @@ impl Payload {
     }
 
     pub fn exp(&self) -> Option<u64> {
-        self.get_f64("exp").and_then(|f| Some(f as u64))
+        self.get_f64("exp").map(|f| f as u64)
     }
 
     pub fn nbf(&self) -> Option<u64> {
-        self.get_f64("nbf").and_then(|f| Some(f as u64))
+        self.get_f64("nbf").map(|f| f as u64)
     }
 
     pub fn iat(&self) -> Option<u64> {
-        self.get_f64("iat").and_then(|f| Some(f as u64))
+        self.get_f64("iat").map(|f| f as u64)
     }
 
     pub fn jti(&self) -> Option<&str> {
@@ -146,27 +144,15 @@ impl Payload {
     }
 
     pub fn expiry(&self) -> Option<SystemTime> {
-        if let Some(time) = self.exp() {
-            Some(SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
-        } else {
-            None
-        }
+        self.exp().map(|time| SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
     }
 
     pub fn issued_at(&self) -> Option<SystemTime> {
-        if let Some(time) = self.iat() {
-            Some(SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
-        } else {
-            None
-        }
+        self.iat().map(|time| SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
     }
 
     pub fn not_before(&self) -> Option<SystemTime> {
-        if let Some(time) = self.nbf() {
-            Some(SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
-        } else {
-            None
-        }
+        self.nbf().map(|time| SystemTime::UNIX_EPOCH.add(Duration::new(time, 0)))
     }
 }
 
@@ -179,11 +165,7 @@ pub struct Jwt {
 
 impl Jwt {
     pub fn new(header: Header, payload: Payload, signature: String) -> Self {
-        Jwt {
-            header,
-            payload,
-            signature,
-        }
+        Jwt { header, payload, signature }
     }
 
     pub fn header(&self) -> &Header {
@@ -203,10 +185,7 @@ impl Jwt {
     }
 
     pub fn expired_time(&self, time: SystemTime) -> Option<bool> {
-        match self.payload.expiry() {
-            Some(token_time) => Some(time > token_time),
-            None => None,
-        }
+        self.payload.expiry().map(|token_time| (time > token_time))
     }
 
     pub fn early(&self) -> Option<bool> {
@@ -214,17 +193,11 @@ impl Jwt {
     }
 
     pub fn early_time(&self, time: SystemTime) -> Option<bool> {
-        match self.payload.not_before() {
-            Some(token_time) => Some(time < token_time),
-            None => None,
-        }
+        self.payload.not_before().map(|token_time| time < token_time)
     }
 
     pub fn issued_by(&self, issuer: &str) -> Option<bool> {
-        match self.payload.iss() {
-            Some(t) => Some(t == issuer),
-            None => None,
-        }
+        self.payload.iss().map(|t| t == issuer)
     }
 
     pub fn valid(&self) -> Option<bool> {
