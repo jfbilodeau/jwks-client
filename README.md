@@ -3,7 +3,7 @@
 JWKS-Client is a library written in Rust to decode and validate JWT tokens using a JSON Web Key Store.
 
 ### Breaking Change
-Now at version 2.0. Support for async/await thanks to [Genna Wingert](https://github.com/wingertge). 
+Now at version 0.2. Support for async/await thanks to [Genna Wingert](https://github.com/wingertge).
 Requires Rust Stable 1.39 or higher
 
 ## ** IMPORTANT **
