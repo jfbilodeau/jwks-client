@@ -52,16 +52,16 @@ mod tests {
         pub email: String,
     }
 
-    #[test]
-    fn test_new_with_url() {
-        let key_set = tokio_test::block_on(KeyStore::new_from(KEY_URL.to_owned())).unwrap();
+    #[tokio::test]
+    async fn test_new_with_url() {
+        let key_set = KeyStore::new_from(KEY_URL.to_owned()).await.unwrap();
 
         assert_eq!(KEY_URL, key_set.key_set_url());
     }
 
-    #[test]
-    fn test_refresh_keys() {
-        let key_set = tokio_test::block_on(KeyStore::new_from(KEY_URL.to_owned())).unwrap();
+    #[tokio::test]
+    async fn test_refresh_keys() {
+        let key_set = KeyStore::new_from(KEY_URL.to_owned()).await.unwrap();
 
         assert_eq!(KEY_URL, key_set.key_set_url());
         assert!(key_set.keys_len() > 0);
@@ -289,22 +289,22 @@ mod tests {
         assert!(jwk.early_time(time).unwrap());
     }
 
-    #[test]
-    fn test_keys_expired() {
+    #[tokio::test]
+    async fn test_keys_expired() {
         let key_store = KeyStore::new();
 
         assert_eq!(None, key_store.last_load_time());
         assert_eq!(None, key_store.keys_expired());
 
-        let key_store = tokio_test::block_on(KeyStore::new_from(KEY_URL.to_owned())).unwrap();
+        let key_store = KeyStore::new_from(KEY_URL.to_owned()).await.unwrap();
 
         assert!(key_store.last_load_time().is_some());
         assert!(key_store.keys_expired().is_some());
-        assert_eq!(false, key_store.keys_expired().unwrap());
+        assert!(!key_store.keys_expired().unwrap());
     }
 
-    #[test]
-    fn test_should_refresh() {
+    #[tokio::test]
+    async fn test_should_refresh() {
         let mut key_store = KeyStore::new();
 
         assert_eq!(0.5, key_store.refresh_interval());
@@ -318,7 +318,7 @@ mod tests {
 
         key_store.set_refresh_interval(0.5);
 
-        tokio_test::block_on(key_store.load_keys_from(KEY_URL.to_owned())).unwrap();
+        key_store.load_keys_from(KEY_URL.to_owned()).await.unwrap();
 
         assert_eq!(0.5, key_store.refresh_interval());
         assert_ne!(None, key_store.expire_time());
