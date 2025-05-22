@@ -4,7 +4,7 @@ use base64::{decode_config, URL_SAFE_NO_PAD};
 use regex::Regex;
 use reqwest;
 use reqwest::Response;
-use ring::signature::{RsaPublicKeyComponents, RSA_PKCS1_2048_8192_SHA256};
+use aws_lc_rs::signature::{RsaPublicKeyComponents, RSA_PKCS1_2048_8192_SHA256};
 use serde::{
     de::DeserializeOwned,
     {Deserialize, Serialize},
